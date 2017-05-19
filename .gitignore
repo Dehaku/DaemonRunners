@@ -45,3 +45,6 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+DaemonRunners.exe
+gmon.out
+*.depend
