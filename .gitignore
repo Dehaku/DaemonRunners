@@ -48,3 +48,7 @@ Temporary Items
 DaemonRunners.exe
 gmon.out
 *.depend
+*.o
+*.depend
+DaemonRunners.exe
+*.out

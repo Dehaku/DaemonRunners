@@ -115,8 +115,23 @@ public:
             if(baseDir == 3)
                 paths.east = true;
 
+            RandomWeightList RWL;
+            RWL.addEntry("0",10);
+            RWL.addEntry("1",60);
+            RWL.addEntry("2",20);
+            RWL.addEntry("3",10);
 
-            int pathAmount = random(0,2);
+            int pathAmount;
+
+            std::string RWLResult = RWL.getRandomName();
+            if(RWLResult == "0")
+                pathAmount = 0;
+            if(RWLResult == "1")
+                pathAmount = 1;
+            if(RWLResult == "2")
+                pathAmount = 2;
+            if(RWLResult == "3")
+                pathAmount = 3;
 
             for(int i = 0; i != pathAmount; i++)
             {
@@ -190,73 +205,96 @@ class WorldManager
 {
 public:
     std::list<World> worlds;
-    void generateWorld()
+    void generateWorld(int minSize = 3, int maxSize = 10)
     {
+        bool properSize = false;
         World world;
-        WorldChunk chunk;
 
-        chunk.genPaths();
-        chunk.pos = sf::Vector2i(50,50);
-        chunk.startingPoint = true;
-        world.chunks.push_back(chunk);
-        WorldChunk lastChunk = chunk;
-        chunk.startingPoint = false;
-
-
-
-        for(int i = 0; i != 10; i++)
+        while(properSize == false)
         {
 
-            if(world.isChunkDeadEnd(lastChunk))
-                continue;
 
-            int newDir;
+            WorldChunk chunk;
 
-            for(int t = 0; t != 10; t++)
+            chunk.genPaths();
+            chunk.pos = sf::Vector2i(50,50);
+            chunk.startingPoint = true;
+            world.chunks.push_back(chunk);
+            WorldChunk lastChunk = chunk;
+            chunk.startingPoint = false;
+
+
+
+            for(int i = 0; i != maxSize; i++)
             {
-                newDir = lastChunk.paths.getRandomValidDirection();
 
-                std::cout << i << "=== \n Chunks Dirs: " << lastChunk.paths.north << "/"<< lastChunk.paths.east << "/"
-                << lastChunk.paths.south << "/" << lastChunk.paths.west << ";"
-                << "Chosen Dir: " << newDir << std::endl;
+                if(world.isChunkDeadEnd(lastChunk))
+                    continue;
 
+                int newDir;
 
-                if(newDir == Directions::NORTH)
-                    chunk.pos += sf::Vector2i(0,-50);
-                if(newDir == Directions::EAST)
-                    chunk.pos += sf::Vector2i(50,0);
-                if(newDir == Directions::SOUTH)
-                    chunk.pos += sf::Vector2i(0,50);
-                if(newDir == Directions::WEST)
-                    chunk.pos += sf::Vector2i(-50,0);
-
-                if(!world.chunkExists(chunk.pos))
+                for(int t = 0; t != 100; t++)
                 {
-                    std::cout << "Break! \n";
-                    break;
+                    newDir = lastChunk.paths.getRandomValidDirection();
+
+
+                    /*
+                    std::cout << i << "=== \n Chunks Dirs: " << lastChunk.paths.north << "/"<< lastChunk.paths.east << "/"
+                    << lastChunk.paths.south << "/" << lastChunk.paths.west << ";"
+                    << "Chosen Dir: " << newDir << std::endl;
+                    */
+
+
+                    if(newDir == Directions::NORTH)
+                        chunk.pos += sf::Vector2i(0,-50);
+                    if(newDir == Directions::EAST)
+                        chunk.pos += sf::Vector2i(50,0);
+                    if(newDir == Directions::SOUTH)
+                        chunk.pos += sf::Vector2i(0,50);
+                    if(newDir == Directions::WEST)
+                        chunk.pos += sf::Vector2i(-50,0);
+
+                    if(!world.chunkExists(chunk.pos))
+                    {
+                        // std::cout << "Break! \n";
+                        break;
+                    }
+
+                    // Resetting it's position, otherwise it'll build a successful path elsewhere.
+                    chunk = lastChunk;
+
+
                 }
 
-                // Resetting it's position, otherwise it'll build a successful path elsewhere.
-                chunk = lastChunk;
 
 
+                chunk.genPaths(newDir);
+
+
+
+
+
+
+                if(i == 9)
+                    chunk.deadEnd = true;
+
+                lastChunk = chunk;
+                world.chunks.push_back(chunk);
             }
 
 
+            if(world.chunks.size() > minSize)
+                properSize = true;
+            else
+            {
+                std::cout << "World too small, Rejected. \n";
+                world.chunks.clear();
+            }
 
-            chunk.genPaths(newDir);
 
-
-
-
-
-
-            if(i == 10)
-                chunk.deadEnd = true;
-
-            lastChunk = chunk;
-            world.chunks.push_back(chunk);
         }
+
+
 
         world.furnishChunks();
 
@@ -1803,7 +1841,7 @@ void jobsMenu()
     sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
     if(worldManager.worlds.empty())
     {
-        worldManager.generateWorld();
+        worldManager.generateWorld(10,100);
     }
 
     worldManager.drawWorld();
