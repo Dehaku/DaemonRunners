@@ -277,6 +277,8 @@ void WorldChunk::generateTiles()
         buildTile(tiles[i][t], tileType);
     }
 
+
+
     if(paths.north)
     {
         for(int i = 14; i != 18; i++)
@@ -307,6 +309,34 @@ void WorldChunk::generateTiles()
             for(int t = 14; t != 18; t++)
         {
             buildTile(tiles[i][t], ChunkTile::FLOOR);
+        }
+    }
+
+
+    bool roundAbout = false;
+    {
+        if(paths.north && paths.east)
+            roundAbout = true;
+        if(paths.south && paths.east)
+            roundAbout = true;
+        if(paths.north && paths.west)
+            roundAbout = true;
+        if(paths.south && paths.west)
+            roundAbout = true;
+        if(startingPoint || deadEnd || bonusChunk)
+            roundAbout = true;
+    }
+
+    if(roundAbout)
+    {
+        for(int i = 0; i != 360; i++)
+        {
+            for(int t = 0; t != 8; t++)
+            {
+                sf::Vector2f tilePosF = math::angleCalc(sf::Vector2f(16,16),i,t);
+                sf::Vector2i tilePos(tilePosF.x,tilePosF.y);
+                buildTile(tiles[tilePos.x][tilePos.y],ChunkTile::FLOOR);
+            }
         }
     }
 
