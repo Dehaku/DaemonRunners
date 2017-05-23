@@ -54,3 +54,4 @@ DaemonRunners.exe
 *.out
 *.pdn
 *.o
+*.exe
