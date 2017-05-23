@@ -52,3 +52,5 @@ gmon.out
 *.depend
 DaemonRunners.exe
 *.out
+*.pdn
+*.o

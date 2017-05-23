@@ -76,7 +76,31 @@ public:
 class ChunkTile
 {
 public:
+    int type;
     bool walkable;
+    int health;
+    int resistence;
+    int workTime;
+
+    enum tileType
+    {
+        WALL,
+        FLOOR,
+        WEAKFENCE,
+        STRONGFENCE,
+        CORE
+
+    };
+
+
+    ChunkTile()
+    {
+        type = WALL;
+        walkable = false;
+        health = 100;
+        resistence = 1000;
+        workTime = 0;
+    }
 };
 
 
@@ -85,12 +109,47 @@ class WorldChunk
 {
 public:
     sf::Vector2i pos;
-    std::vector<std::vector<ChunkTile>> tiles;
+    ChunkTile tiles[32][32];
     Directions paths;
     bool startingPoint;
     bool deadEnd;
     bool bonusChunk;
 
+
+    void generateTiles()
+    {
+        for(int i = 0; i != 32; i++)
+            for(int t = 0; t != 32; t++)
+        {
+            int tileType = random(0,2);
+
+            if(tileType == ChunkTile::WALL)
+            {
+                tiles[i][t].type = ChunkTile::WALL;
+                tiles[i][t].walkable = false;
+                tiles[i][t].health = 100;
+                tiles[i][t].resistence = 1000;
+                tiles[i][t].workTime = 0;
+            }
+            else if(tileType == ChunkTile::FLOOR)
+            {
+                tiles[i][t].type = ChunkTile::FLOOR;
+                tiles[i][t].walkable = true;
+                tiles[i][t].health = 0;
+                tiles[i][t].resistence = 0;
+                tiles[i][t].workTime = 0;
+            }
+            else if(tileType == ChunkTile::WEAKFENCE)
+            {
+                tiles[i][t].type = ChunkTile::WEAKFENCE;
+                tiles[i][t].walkable = false;
+                tiles[i][t].health = 100;
+                tiles[i][t].resistence = 10;
+                tiles[i][t].workTime = 0;
+            }
+
+        }
+    }
 
     void genPaths(int baseDir = -1)
     {
@@ -159,6 +218,51 @@ public:
     }
 
 
+    void drawTiles()
+    {
+        static sf::Texture &wallTex = texturemanager.getTexture("GenericWall.png");
+        static sf::Texture &floorTex = texturemanager.getTexture("GenericFloor.png");
+        static sf::Texture &weakfenceTex = texturemanager.getTexture("GenericWeakFence.png");
+
+        sf::Color chunkColor = sf::Color::White;
+        if(deadEnd)
+            chunkColor = sf::Color(200,0,0);
+        if(startingPoint)
+            chunkColor = sf::Color(0,0,200);
+        if(bonusChunk)
+            chunkColor = sf::Color(0,200,0);
+
+        for(int i = 0; i != 32; i++)
+            for(int t = 0; t != 32; t++)
+        {
+            sf::Vector2f drawPos(pos.x+(i*32),pos.y+(t*32));
+
+            if(!onScreen(drawPos))
+                continue;
+
+            if(tiles[i][t].type == ChunkTile::WALL)
+            {
+                shapes.createImageButton(drawPos,wallTex);
+                shapes.shapes.back().maincolor = chunkColor;
+            }
+
+
+
+            if(tiles[i][t].type == ChunkTile::FLOOR)
+            {
+                shapes.createImageButton(drawPos,floorTex);
+                shapes.shapes.back().maincolor = chunkColor;
+            }
+
+            if(tiles[i][t].type == ChunkTile::WEAKFENCE)
+            {
+                shapes.createImageButton(drawPos,weakfenceTex);
+                shapes.shapes.back().maincolor = chunkColor;
+            }
+
+        }
+    }
+
     WorldChunk()
     {
         startingPoint = false;
@@ -171,7 +275,7 @@ public:
 class World
 {
 public:
-    std::vector<WorldChunk> chunks;
+    std::list<WorldChunk> chunks;
 
     bool chunkExists(sf::Vector2i chunkPos)
     {
@@ -208,7 +312,8 @@ public:
 
     void furnishChunks()
     {
-
+        for(auto &chunk : chunks)
+            chunk.generateTiles();
     }
 };
 
@@ -230,7 +335,7 @@ public:
             WorldChunk chunk;
 
             chunk.genPaths();
-            chunk.pos = sf::Vector2i(50,50);
+            chunk.pos = sf::Vector2i(1024,1024);
             chunk.startingPoint = true;
             world.chunks.push_back(chunk);
             WorldChunk lastChunk = chunk;
@@ -259,10 +364,10 @@ public:
                     if(lastChunk.paths.west)
                         westAble = true;
 
-                    sf::Vector2i northChunk(lastChunk.pos.x,lastChunk.pos.y-50);
-                    sf::Vector2i eastChunk(lastChunk.pos.x+50,lastChunk.pos.y);
-                    sf::Vector2i southChunk(lastChunk.pos.x,lastChunk.pos.y+50);
-                    sf::Vector2i westChunk(lastChunk.pos.x-50,lastChunk.pos.y);
+                    sf::Vector2i northChunk(lastChunk.pos.x,lastChunk.pos.y-1024);
+                    sf::Vector2i eastChunk(lastChunk.pos.x+1024,lastChunk.pos.y);
+                    sf::Vector2i southChunk(lastChunk.pos.x,lastChunk.pos.y+1024);
+                    sf::Vector2i westChunk(lastChunk.pos.x-1024,lastChunk.pos.y);
 
 
                     if(northAble && !world.chunkExists(northChunk))
@@ -301,13 +406,13 @@ public:
 
 
                     if(newDir == Directions::NORTH)
-                        chunk.pos += sf::Vector2i(0,-50);
+                        chunk.pos += sf::Vector2i(0,-1024);
                     if(newDir == Directions::EAST)
-                        chunk.pos += sf::Vector2i(50,0);
+                        chunk.pos += sf::Vector2i(1024,0);
                     if(newDir == Directions::SOUTH)
-                        chunk.pos += sf::Vector2i(0,50);
+                        chunk.pos += sf::Vector2i(0,1024);
                     if(newDir == Directions::WEST)
-                        chunk.pos += sf::Vector2i(-50,0);
+                        chunk.pos += sf::Vector2i(-1024,0);
 
                 }
 
@@ -330,7 +435,7 @@ public:
             world.chunks.back().deadEnd = true;
 
 
-            for(auto lastChunk : world.chunks)
+            for(auto &lastChunkWork : world.chunks)
             {
                 bool emptyNorth = false;
                 bool emptyEast = false;
@@ -342,19 +447,19 @@ public:
                     bool eastAble = false;
                     bool southAble = false;
                     bool westAble = false;
-                    if(lastChunk.paths.north)
+                    if(lastChunkWork.paths.north)
                         northAble = true;
-                    if(lastChunk.paths.east)
+                    if(lastChunkWork.paths.east)
                         eastAble = true;
-                    if(lastChunk.paths.south)
+                    if(lastChunkWork.paths.south)
                         southAble = true;
-                    if(lastChunk.paths.west)
+                    if(lastChunkWork.paths.west)
                         westAble = true;
 
-                    sf::Vector2i northChunk(lastChunk.pos.x,lastChunk.pos.y-50);
-                    sf::Vector2i eastChunk(lastChunk.pos.x+50,lastChunk.pos.y);
-                    sf::Vector2i southChunk(lastChunk.pos.x,lastChunk.pos.y+50);
-                    sf::Vector2i westChunk(lastChunk.pos.x-50,lastChunk.pos.y);
+                    sf::Vector2i northChunk(lastChunkWork.pos.x,lastChunkWork.pos.y-1024);
+                    sf::Vector2i eastChunk(lastChunkWork.pos.x+1024,lastChunkWork.pos.y);
+                    sf::Vector2i southChunk(lastChunkWork.pos.x,lastChunkWork.pos.y+1024);
+                    sf::Vector2i westChunk(lastChunkWork.pos.x-1024,lastChunkWork.pos.y);
 
 
                     if(northAble && !world.chunkExists(northChunk))
@@ -370,10 +475,10 @@ public:
 
                 if(emptyNorth)
                 {
-                    //lastChunk = chunky;
-                    chunk = lastChunk;
+                    //lastChunkWork = chunky;
+                    chunk = lastChunkWork;
 
-                    chunk.pos += sf::Vector2i(0,-50);
+                    chunk.pos += sf::Vector2i(0,-1024);
 
                     chunk.paths.clear();
                     chunk.paths.south = true;
@@ -383,9 +488,9 @@ public:
 
                 if(emptyEast)
                 {
-                    chunk = lastChunk;
+                    chunk = lastChunkWork;
 
-                    chunk.pos += sf::Vector2i(50,0);
+                    chunk.pos += sf::Vector2i(1024,0);
 
                     chunk.paths.clear();
                     chunk.paths.west = true;
@@ -395,9 +500,9 @@ public:
 
                 if(emptySouth)
                 {
-                    chunk = lastChunk;
+                    chunk = lastChunkWork;
 
-                    chunk.pos += sf::Vector2i(0,50);
+                    chunk.pos += sf::Vector2i(0,1024);
 
                     chunk.paths.clear();
                     chunk.paths.north = true;
@@ -407,9 +512,9 @@ public:
 
                 if(emptyWest)
                 {
-                    chunk = lastChunk;
+                    chunk = lastChunkWork;
 
-                    chunk.pos += sf::Vector2i(-50,0);
+                    chunk.pos += sf::Vector2i(-1024,0);
 
                     chunk.paths.clear();
                     chunk.paths.east = true;
@@ -442,6 +547,8 @@ public:
 
     void drawWorld()
     {
+        return;
+
         if(worlds.empty())
             return;
         World &world = worlds.front();
@@ -452,27 +559,36 @@ public:
             chunkCount++;
             // Chunk Color based on type
             if(chunk.startingPoint)
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(0,0,100));
+                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(0,0,100));
             else if(chunk.bonusChunk)
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(0,100,0));
+                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(0,100,0));
             else if(chunk.deadEnd)
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(100,0,0));
+                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(100,0,0));
             else
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(100,100,100));
+                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(100,100,100));
+
+            shapes.shapes.back().offscreenRender = true;
+
+            chunk.drawTiles();
 
             // Open Path Waypoints
 
             if(chunk.paths.north)
-                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25,chunk.pos.y+25-25,2,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512-512,20,sf::Color::Blue);
+            shapes.shapes.back().offscreenRender = true;
             if(chunk.paths.east)
-                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25+25,chunk.pos.y+25,2,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512+512,chunk.pos.y+512,20,sf::Color::Blue);
+            shapes.shapes.back().offscreenRender = true;
             if(chunk.paths.south)
-                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25,chunk.pos.y+25+25,2,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512+512,20,sf::Color::Blue);
+            shapes.shapes.back().offscreenRender = true;
             if(chunk.paths.west)
-                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25-25,chunk.pos.y+25,2,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512-512,chunk.pos.y+512,20,sf::Color::Blue);
+            shapes.shapes.back().offscreenRender = true;
 
 
-            shapes.createText(chunk.pos.x+25,chunk.pos.y+25,10,sf::Color::White,std::to_string(chunkCount));
+            shapes.createText(chunk.pos.x+512,chunk.pos.y+512,50,sf::Color::White,std::to_string(chunkCount));
+            shapes.shapes.back().offscreenRender = true;
 
         }
 
@@ -1698,6 +1814,11 @@ void drawFPSandData()
                       + std::to_string(int(byteKeeper.gigabytesCollected)) + " GB"
                       , &gvars::hudView);
     yOffset++;
+
+    shapes.createText(-130,10*yOffset,10,sf::Color::White, "Zoom: "
+                      + std::to_string(gvars::cameraZoom)
+                      , &gvars::hudView);
+    yOffset++;
 }
 
 void drawChat()
@@ -1990,6 +2111,8 @@ void jobsMenu()
 
     if(inputState.key[Key::X].time == 1)
         worldManager.worlds.clear();
+
+    drawFPSandData();
 
 }
 
@@ -2408,8 +2531,106 @@ void generalFunctionsPostRender()
     */
 }
 
+void drawWorld()
+{
+    if(worldManager.worlds.empty())
+        return;
+
+    World &world = worldManager.worlds.back();
+
+    static sf::Texture &wallTex = texturemanager.getTexture("GenericWall.png");
+    static sf::Texture &floorTex = texturemanager.getTexture("GenericFloor.png");
+    static sf::Texture &weakfenceTex = texturemanager.getTexture("GenericWeakFence.png");
+
+    static sf::Sprite wallSprite;
+    static sf::Sprite floorSprite;
+    static sf::Sprite weakfenceSprite;
+
+    {
+        if(wallSprite.getTexture() == nullptr)
+        {
+            wallSprite.setTexture(wallTex);
+        }
+        if(floorSprite.getTexture() == nullptr)
+        {
+            floorSprite.setTexture(floorTex);
+        }
+        if(weakfenceSprite.getTexture() == nullptr)
+        {
+            weakfenceSprite.setTexture(weakfenceTex);
+        }
+
+    }
+
+
+    sf::View oldView = window.getView();
+    window.setView(gvars::view1);
+
+    for(auto &chunk : world.chunks)
+    {
+        sf::Color chunkColor = sf::Color::White;
+        if(chunk.deadEnd)
+            chunkColor = sf::Color(200,0,0);
+        if(chunk.startingPoint)
+            chunkColor = sf::Color(0,0,200);
+        if(chunk.bonusChunk)
+            chunkColor = sf::Color(0,200,0);
+
+        for(int i = 0; i != 32; i++)
+            for(int t = 0; t != 32; t++)
+        {
+            sf::Vector2f drawPos(chunk.pos.x+(i*32),chunk.pos.y+(t*32));
+
+            if(!onScreen(drawPos,20))
+                continue;
+
+            if(chunk.tiles[i][t].type == ChunkTile::WALL)
+            {
+                wallSprite.setPosition(drawPos);
+                wallSprite.setColor(chunkColor);
+                window.draw(wallSprite);
+                //shapes.createImageButton(drawPos,wallTex);
+                //shapes.shapes.back().maincolor = chunkColor;
+            }
+
+
+
+            if(chunk.tiles[i][t].type == ChunkTile::FLOOR)
+            {
+                floorSprite.setPosition(drawPos);
+                floorSprite.setColor(chunkColor);
+                window.draw(floorSprite);
+            }
+
+            if(chunk.tiles[i][t].type == ChunkTile::WEAKFENCE)
+            {
+                weakfenceSprite.setPosition(drawPos);
+                weakfenceSprite.setColor(chunkColor);
+                window.draw(weakfenceSprite);
+            }
+
+        }
+
+
+
+
+
+
+
+
+
+
+    }
+
+    window.setView(oldView);
+
+}
+
 void renderGame()
 {
+
+    drawWorld();
+
     generalFunctions();
 
     chatStuffs();

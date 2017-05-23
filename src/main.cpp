@@ -349,7 +349,8 @@ int main()
 
     // Delta Timestep
     double t = 0.0;
-    double dt = 0.01; // const
+    // double dt = 0.01; // const
+    double dt = 0.017;
     double currentTime = fpsKeeper.startTime.getElapsedTime().asSeconds();
     double accumulator = 0.0;
 
@@ -376,6 +377,8 @@ int main()
                 dt += 0.0001;
             else if(dt < 0.02)
                 dt += 0.001;
+
+            std::cout << "DT: " << dt << std::endl;
         }
         if(inputState.key[Key::Right].time == 1)
         {
@@ -416,7 +419,7 @@ int main()
 
             // Functions end, Upkeep begins.
             if(fpsKeeper.framesPerSecond <= 1)
-                dt = 0.01; // A nice little failsafe to help the player.
+                dt = 0.017; // A nice little failsafe to help the player.
             fpsKeeper.updatesPassed++;
             fpsKeeper.updatesPassedTotal++;
             runAmount++;

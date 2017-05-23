@@ -263,6 +263,26 @@ bool onScreen(sf::Vector2f vPos)
     return false;
 }
 
+bool onScreen(sf::Vector2f vPos, int wiggleRoom)
+{
+    static int lowcapX;
+    static int lowcapY;
+    static int highcapX;
+    static int highcapY;
+
+    lowcapX = (gvars::view1.getCenter().x - (gvars::view1.getSize().x/2))-wiggleRoom;
+    lowcapY = (gvars::view1.getCenter().y - (gvars::view1.getSize().y/2))-wiggleRoom;
+    highcapX = ((gvars::view1.getCenter().x + (gvars::view1.getSize().x/2)))+wiggleRoom;
+    highcapY = ((gvars::view1.getCenter().y + (gvars::view1.getSize().y/2)))+wiggleRoom;
+    // TODO: Set these variables only once per frame.
+
+
+    if(aabb(vPos,lowcapX,highcapX,lowcapY,highcapY))
+        return true;
+
+    return false;
+}
+
 void screenShake(float intensity)
 {
     gvars::screenShake += intensity;

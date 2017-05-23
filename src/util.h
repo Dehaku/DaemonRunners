@@ -150,6 +150,7 @@ bool aabb(sf::Vector2i point, int left, int right, int up, int down);
 
 
 bool onScreen(sf::Vector2f vPos);
+bool onScreen(sf::Vector2f vPos, int wiggleRoom);
 void screenShake(float intensity);
 void renderScreenShake();
 
