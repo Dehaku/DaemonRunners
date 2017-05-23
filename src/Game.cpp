@@ -84,6 +84,7 @@ public:
 
     enum tileType
     {
+        EMPTY,
         WALL,
         FLOOR,
         WEAKFENCE,
@@ -95,7 +96,7 @@ public:
 
     ChunkTile()
     {
-        type = WALL;
+        type = EMPTY;
         walkable = false;
         health = 100;
         resistence = 1000;
@@ -116,40 +117,7 @@ public:
     bool bonusChunk;
 
 
-    void generateTiles()
-    {
-        for(int i = 0; i != 32; i++)
-            for(int t = 0; t != 32; t++)
-        {
-            int tileType = random(0,2);
-
-            if(tileType == ChunkTile::WALL)
-            {
-                tiles[i][t].type = ChunkTile::WALL;
-                tiles[i][t].walkable = false;
-                tiles[i][t].health = 100;
-                tiles[i][t].resistence = 1000;
-                tiles[i][t].workTime = 0;
-            }
-            else if(tileType == ChunkTile::FLOOR)
-            {
-                tiles[i][t].type = ChunkTile::FLOOR;
-                tiles[i][t].walkable = true;
-                tiles[i][t].health = 0;
-                tiles[i][t].resistence = 0;
-                tiles[i][t].workTime = 0;
-            }
-            else if(tileType == ChunkTile::WEAKFENCE)
-            {
-                tiles[i][t].type = ChunkTile::WEAKFENCE;
-                tiles[i][t].walkable = false;
-                tiles[i][t].health = 100;
-                tiles[i][t].resistence = 10;
-                tiles[i][t].workTime = 0;
-            }
-
-        }
-    }
+    void generateTiles();
 
     void genPaths(int baseDir = -1)
     {
@@ -271,6 +239,83 @@ public:
 
     }
 };
+
+void buildTile(ChunkTile& tile, int tileType)
+{
+    if(tileType == ChunkTile::WALL)
+    {
+        tile.type = ChunkTile::WALL;
+        tile.walkable = false;
+        tile.health = 100;
+        tile.resistence = 1000;
+        tile.workTime = 0;
+    }
+    else if(tileType == ChunkTile::FLOOR)
+    {
+        tile.type = ChunkTile::FLOOR;
+        tile.walkable = true;
+        tile.health = 0;
+        tile.resistence = 0;
+        tile.workTime = 0;
+    }
+    else if(tileType == ChunkTile::WEAKFENCE)
+    {
+        tile.type = ChunkTile::WEAKFENCE;
+        tile.walkable = false;
+        tile.health = 100;
+        tile.resistence = 10;
+        tile.workTime = 0;
+    }
+}
+
+void WorldChunk::generateTiles()
+{
+    for(int i = 0; i != 32; i++)
+        for(int t = 0; t != 32; t++)
+    {
+        int tileType = random(0,4);
+        buildTile(tiles[i][t], tileType);
+    }
+
+    if(paths.north)
+    {
+        for(int i = 14; i != 18; i++)
+            for(int t = 0; t != 16; t++)
+        {
+            buildTile(tiles[i][t], ChunkTile::FLOOR);
+        }
+    }
+    if(paths.east)
+    {
+        for(int i = 15; i != 32; i++)
+            for(int t = 14; t != 18; t++)
+        {
+            buildTile(tiles[i][t], ChunkTile::FLOOR);
+        }
+    }
+    if(paths.south)
+    {
+        for(int i = 14; i != 18; i++)
+            for(int t = 15; t != 32; t++)
+        {
+            buildTile(tiles[i][t], ChunkTile::FLOOR);
+        }
+    }
+    if(paths.west)
+    {
+        for(int i = 0; i != 16; i++)
+            for(int t = 14; t != 18; t++)
+        {
+            buildTile(tiles[i][t], ChunkTile::FLOOR);
+        }
+    }
+
+
+
+
+
+
+}
 
 class World
 {
@@ -2566,8 +2611,11 @@ void drawWorld()
     sf::View oldView = window.getView();
     window.setView(gvars::view1);
 
+    int chunkCount = 0;
     for(auto &chunk : world.chunks)
     {
+        chunkCount++;
+
         sf::Color chunkColor = sf::Color::White;
         if(chunk.deadEnd)
             chunkColor = sf::Color(200,0,0);
@@ -2612,7 +2660,25 @@ void drawWorld()
         }
 
 
+        if(chunk.paths.north)
+            shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512-512,20,sf::Color::Blue);
+        shapes.shapes.back().offscreenRender = true;
 
+        if(chunk.paths.east)
+            shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512+512,chunk.pos.y+512,20,sf::Color::Blue);
+        shapes.shapes.back().offscreenRender = true;
+
+        if(chunk.paths.south)
+            shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512+512,20,sf::Color::Blue);
+        shapes.shapes.back().offscreenRender = true;
+
+        if(chunk.paths.west)
+            shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512-512,chunk.pos.y+512,20,sf::Color::Blue);
+        shapes.shapes.back().offscreenRender = true;
+
+
+        shapes.createText(chunk.pos.x+512,chunk.pos.y+512,50,sf::Color::White,std::to_string(chunkCount));
+        shapes.shapes.back().offscreenRender = true;
 
 
 
