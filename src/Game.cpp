@@ -23,6 +23,14 @@ public:
         WEST
     };
 
+    void clear()
+    {
+        north = false;
+        east = false;
+        south = false;
+        west = false;
+    }
+
     int getRandomValidDirection()
     {
         std::vector<int> dirs;
@@ -81,7 +89,7 @@ public:
     Directions paths;
     bool startingPoint;
     bool deadEnd;
-
+    bool bonusChunk;
 
 
     void genPaths(int baseDir = -1)
@@ -155,6 +163,7 @@ public:
     {
         startingPoint = false;
         deadEnd = false;
+        bonusChunk = false;
 
     }
 };
@@ -186,7 +195,11 @@ public:
                     return true;
                 }
                 else
+                {
+                    chunk.deadEnd = false;
                     return false;
+                }
+
 
             }
 
@@ -231,11 +244,53 @@ public:
                 if(world.isChunkDeadEnd(lastChunk))
                     continue;
 
+                std::vector<int> validPaths;
+                {
+                    bool northAble = false;
+                    bool eastAble = false;
+                    bool southAble = false;
+                    bool westAble = false;
+                    if(lastChunk.paths.north)
+                        northAble = true;
+                    if(lastChunk.paths.east)
+                        eastAble = true;
+                    if(lastChunk.paths.south)
+                        southAble = true;
+                    if(lastChunk.paths.west)
+                        westAble = true;
+
+                    sf::Vector2i northChunk(lastChunk.pos.x,lastChunk.pos.y-50);
+                    sf::Vector2i eastChunk(lastChunk.pos.x+50,lastChunk.pos.y);
+                    sf::Vector2i southChunk(lastChunk.pos.x,lastChunk.pos.y+50);
+                    sf::Vector2i westChunk(lastChunk.pos.x-50,lastChunk.pos.y);
+
+
+                    if(northAble && !world.chunkExists(northChunk))
+                        validPaths.push_back(Directions::NORTH);
+                    if(eastAble && !world.chunkExists(eastChunk))
+                        validPaths.push_back(Directions::EAST);
+                    if(southAble && !world.chunkExists(southChunk))
+                        validPaths.push_back(Directions::SOUTH);
+                    if(westAble && !world.chunkExists(westChunk))
+                        validPaths.push_back(Directions::WEST);
+                }
+
+                if(validPaths.empty())
+                {
+                    chunk.deadEnd = true;
+                    break;
+                }
+
+
+
                 int newDir;
 
-                for(int t = 0; t != 100; t++)
+                newDir = validPaths[random(0,validPaths.size()-1)];
+
+
+
                 {
-                    newDir = lastChunk.paths.getRandomValidDirection();
+                    //newDir = lastChunk.paths.getRandomValidDirection();
 
 
                     /*
@@ -254,16 +309,6 @@ public:
                     if(newDir == Directions::WEST)
                         chunk.pos += sf::Vector2i(-50,0);
 
-                    if(!world.chunkExists(chunk.pos))
-                    {
-                        // std::cout << "Break! \n";
-                        break;
-                    }
-
-                    // Resetting it's position, otherwise it'll build a successful path elsewhere.
-                    chunk = lastChunk;
-
-
                 }
 
 
@@ -275,11 +320,105 @@ public:
 
 
 
-                if(i == 9)
-                    chunk.deadEnd = true;
+                // if(i == 9)
+                //    chunk.deadEnd = true;
 
                 lastChunk = chunk;
                 world.chunks.push_back(chunk);
+            }
+
+            world.chunks.back().deadEnd = true;
+
+
+            for(auto lastChunk : world.chunks)
+            {
+                bool emptyNorth = false;
+                bool emptyEast = false;
+                bool emptySouth = false;
+                bool emptyWest = false;
+                std::vector<int> validPaths;
+                {
+                    bool northAble = false;
+                    bool eastAble = false;
+                    bool southAble = false;
+                    bool westAble = false;
+                    if(lastChunk.paths.north)
+                        northAble = true;
+                    if(lastChunk.paths.east)
+                        eastAble = true;
+                    if(lastChunk.paths.south)
+                        southAble = true;
+                    if(lastChunk.paths.west)
+                        westAble = true;
+
+                    sf::Vector2i northChunk(lastChunk.pos.x,lastChunk.pos.y-50);
+                    sf::Vector2i eastChunk(lastChunk.pos.x+50,lastChunk.pos.y);
+                    sf::Vector2i southChunk(lastChunk.pos.x,lastChunk.pos.y+50);
+                    sf::Vector2i westChunk(lastChunk.pos.x-50,lastChunk.pos.y);
+
+
+                    if(northAble && !world.chunkExists(northChunk))
+                        emptyNorth = true;
+                    if(eastAble && !world.chunkExists(eastChunk))
+                        emptyEast = true;
+                    if(southAble && !world.chunkExists(southChunk))
+                        emptySouth = true;
+                    if(westAble && !world.chunkExists(westChunk))
+                        emptyWest = true;
+                }
+
+
+                if(emptyNorth)
+                {
+                    //lastChunk = chunky;
+                    chunk = lastChunk;
+
+                    chunk.pos += sf::Vector2i(0,-50);
+
+                    chunk.paths.clear();
+                    chunk.paths.south = true;
+                    chunk.bonusChunk = true;
+                    world.chunks.push_back(chunk);
+                }
+
+                if(emptyEast)
+                {
+                    chunk = lastChunk;
+
+                    chunk.pos += sf::Vector2i(50,0);
+
+                    chunk.paths.clear();
+                    chunk.paths.west = true;
+                    chunk.bonusChunk = true;
+                    world.chunks.push_back(chunk);
+                }
+
+                if(emptySouth)
+                {
+                    chunk = lastChunk;
+
+                    chunk.pos += sf::Vector2i(0,50);
+
+                    chunk.paths.clear();
+                    chunk.paths.north = true;
+                    chunk.bonusChunk = true;
+                    world.chunks.push_back(chunk);
+                }
+
+                if(emptyWest)
+                {
+                    chunk = lastChunk;
+
+                    chunk.pos += sf::Vector2i(-50,0);
+
+                    chunk.paths.clear();
+                    chunk.paths.east = true;
+                    chunk.bonusChunk = true;
+                    world.chunks.push_back(chunk);
+                }
+
+
+
             }
 
 
@@ -287,7 +426,7 @@ public:
                 properSize = true;
             else
             {
-                std::cout << "World too small, Rejected. \n";
+                std::cout << "World too small, Rejected. (" << world.chunks.size() << ") \n";
                 world.chunks.clear();
             }
 
@@ -315,6 +454,8 @@ public:
             // Chunk Color based on type
             if(chunk.startingPoint)
                 shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(0,0,100));
+            else if(chunk.bonusChunk)
+                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(0,100,0));
             else if(chunk.deadEnd)
                 shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(100,0,0));
             else
@@ -1841,7 +1982,7 @@ void jobsMenu()
     sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
     if(worldManager.worlds.empty())
     {
-        worldManager.generateWorld(10,100);
+        worldManager.generateWorld(20,100);
     }
 
     worldManager.drawWorld();
