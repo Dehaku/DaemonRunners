@@ -445,7 +445,6 @@ public:
         if(worlds.empty())
             return;
         World &world = worlds.front();
-        //std::cout << "World: " << world.chunks.size();
 
         int chunkCount = 0;
         for(auto &chunk : world.chunks)

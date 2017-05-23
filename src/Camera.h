@@ -5,6 +5,8 @@
 #include "InputState.h"
 #include "util.h"
 
+void cameraZoomIn();
+void cameraZoomOut();
 void cameraControls();
 
 #endif // CAMERA_H_INCLUDED

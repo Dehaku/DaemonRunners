@@ -171,11 +171,13 @@ void handleEvents()
                 //if(menus.empty())
                 {
                     std::cout << "Zoom Out \n";
-                    if (gvars::cameraZoom < 2)
+                    //if (gvars::cameraZoom < 2)
                     {
-                        gvars::cameraZoom = gvars::cameraZoom / 0.5;
+                        //gvars::cameraZoom = gvars::cameraZoom / 0.5;
                         //CameraSize
-                        gvars::view1.zoom(0.5);
+
+                        cameraZoomOut();
+                        //gvars::view1.zoom(0.5);
                     }
                 }
 
@@ -197,10 +199,11 @@ void handleEvents()
                 //if(menus.empty())
                 {
                    std::cout << "Zoom In \n";
-                    if (gvars::cameraZoom > 0.5)
+                    //if (gvars::cameraZoom > 0.5)
                     {
-                        gvars::cameraZoom = gvars::cameraZoom / 2;
-                        gvars::view1.zoom(2);
+                        //gvars::cameraZoom = gvars::cameraZoom / 2;
+                        cameraZoomIn();
+                        //gvars::view1.zoom(2);
                     }
                 }
 

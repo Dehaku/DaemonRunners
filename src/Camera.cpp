@@ -2,6 +2,26 @@
 
 
 
+void cameraZoomIn()
+{
+    if(gvars::cameraZoom > 10)
+        return;
+
+    gvars::cameraZoom = gvars::cameraZoom / 0.8;
+    gvars::view1.zoom(1.25);
+
+}
+
+void cameraZoomOut()
+{
+    if(gvars::cameraZoom < 0.25)
+        return;
+
+    gvars::cameraZoom = gvars::cameraZoom / 1.25;
+
+    gvars::view1.zoom(0.8);
+}
+
 void cameraControls()
 {
     static int CHUNK_SIZE = 0;
@@ -44,9 +64,9 @@ void cameraControls()
 
 
         if (inputState.key[Key::Add].time == 1)
-            gvars::view1.zoom(2);
+            cameraZoomIn();
         if (inputState.key[Key::Subtract].time == 1)
-            gvars::view1.zoom(0.5);
+            cameraZoomOut();
 
 
 
