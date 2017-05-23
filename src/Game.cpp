@@ -270,29 +270,71 @@ void buildTile(ChunkTile& tile, int tileType)
 
 void buildChallengeChunk(WorldChunk& chunk)
 {
-    for(int i = 4; i != 28; i++)
-        for(int t = 4; t != 28; t++)
-    {
-        buildTile(chunk.tiles[i][t], ChunkTile::FLOOR);
-    }
-
-    if(chunk.paths.north && chunk.paths.south)
+    int challengeType = random(1,2);
+    if(challengeType == 1)
     {
         for(int i = 4; i != 28; i++)
-            for(int t = 15; t != 17; t++)
+            for(int t = 4; t != 28; t++)
         {
-            buildTile(chunk.tiles[i][t], ChunkTile::WEAKFENCE);
+            buildTile(chunk.tiles[i][t], ChunkTile::FLOOR);
+        }
+
+        if(chunk.paths.north && chunk.paths.south)
+        {
+            for(int i = 4; i != 28; i++)
+                for(int t = 15; t != 17; t++)
+            {
+                buildTile(chunk.tiles[i][t], ChunkTile::WEAKFENCE);
+            }
+        }
+
+        if(chunk.paths.west && chunk.paths.east)
+        {
+            for(int i = 15; i != 17; i++)
+                for(int t = 4; t != 28; t++)
+            {
+                buildTile(chunk.tiles[i][t], ChunkTile::WEAKFENCE);
+            }
+        }
+    }
+    if(challengeType == 2)
+    {
+        for(int i = 4; i != 28; i++)
+            for(int t = 4; t != 28; t++)
+        {
+            buildTile(chunk.tiles[i][t], ChunkTile::FLOOR);
+        }
+
+        if(chunk.paths.north && chunk.paths.south)
+        {
+            for(int i = 4; i != 28; i++)
+                for(int t = 15; t != 17; t++)
+            {
+                buildTile(chunk.tiles[i][t], ChunkTile::WALL);
+            }
+
+            buildTile(chunk.tiles[15][15], ChunkTile::WEAKFENCE);
+            buildTile(chunk.tiles[15][16], ChunkTile::WEAKFENCE);
+            buildTile(chunk.tiles[16][15], ChunkTile::WEAKFENCE);
+            buildTile(chunk.tiles[16][16], ChunkTile::WEAKFENCE);
+        }
+
+        if(chunk.paths.west && chunk.paths.east)
+        {
+            for(int i = 15; i != 17; i++)
+                for(int t = 4; t != 28; t++)
+            {
+                buildTile(chunk.tiles[i][t], ChunkTile::WALL);
+            }
+
+            buildTile(chunk.tiles[15][15], ChunkTile::WEAKFENCE);
+            buildTile(chunk.tiles[15][16], ChunkTile::WEAKFENCE);
+            buildTile(chunk.tiles[16][15], ChunkTile::WEAKFENCE);
+            buildTile(chunk.tiles[16][16], ChunkTile::WEAKFENCE);
         }
     }
 
-    if(chunk.paths.west && chunk.paths.east)
-    {
-        for(int i = 15; i != 17; i++)
-            for(int t = 4; t != 28; t++)
-        {
-            buildTile(chunk.tiles[i][t], ChunkTile::WEAKFENCE);
-        }
-    }
+
 
 }
 
