@@ -268,13 +268,74 @@ void buildTile(ChunkTile& tile, int tileType)
     }
 }
 
+void buildChallengeChunk(WorldChunk& chunk)
+{
+    for(int i = 4; i != 28; i++)
+        for(int t = 4; t != 28; t++)
+    {
+        buildTile(chunk.tiles[i][t], ChunkTile::FLOOR);
+    }
+
+    if(chunk.paths.north && chunk.paths.south)
+    {
+        for(int i = 4; i != 28; i++)
+            for(int t = 15; t != 17; t++)
+        {
+            buildTile(chunk.tiles[i][t], ChunkTile::WEAKFENCE);
+        }
+    }
+
+    if(chunk.paths.west && chunk.paths.east)
+    {
+        for(int i = 15; i != 17; i++)
+            for(int t = 4; t != 28; t++)
+        {
+            buildTile(chunk.tiles[i][t], ChunkTile::WEAKFENCE);
+        }
+    }
+
+}
+
 void WorldChunk::generateTiles()
 {
     for(int i = 0; i != 32; i++)
         for(int t = 0; t != 32; t++)
     {
-        int tileType = random(0,4);
+        int tileType = random(0,1);
         buildTile(tiles[i][t], tileType);
+    }
+
+
+
+    bool roundAbout = false;
+    {
+        if(paths.north && paths.east)
+            roundAbout = true;
+        if(paths.south && paths.east)
+            roundAbout = true;
+        if(paths.north && paths.west)
+            roundAbout = true;
+        if(paths.south && paths.west)
+            roundAbout = true;
+        if(startingPoint || deadEnd || bonusChunk)
+            roundAbout = true;
+    }
+
+    if(roundAbout)
+    {
+        for(int i = 0; i != 360; i++)
+        {
+            for(int t = 0; t != 8; t++)
+            {
+                sf::Vector2f tilePosF = math::angleCalc(sf::Vector2f(16,16),i,t);
+                sf::Vector2i tilePos(tilePosF.x,tilePosF.y);
+                buildTile(tiles[tilePos.x][tilePos.y],ChunkTile::FLOOR);
+            }
+
+            sf::Vector2f tilePosF = math::angleCalc(sf::Vector2f(16,16),i,8);
+            sf::Vector2i tilePos(tilePosF.x,tilePosF.y);
+            buildTile(tiles[tilePos.x][tilePos.y],ChunkTile::WALL);
+        }
     }
 
 
@@ -312,33 +373,15 @@ void WorldChunk::generateTiles()
         }
     }
 
-
-    bool roundAbout = false;
+    if(!roundAbout)
     {
-        if(paths.north && paths.east)
-            roundAbout = true;
-        if(paths.south && paths.east)
-            roundAbout = true;
-        if(paths.north && paths.west)
-            roundAbout = true;
-        if(paths.south && paths.west)
-            roundAbout = true;
-        if(startingPoint || deadEnd || bonusChunk)
-            roundAbout = true;
+        int challengeChance = random(1,10);
+
+        if(challengeChance <= 3)
+            buildChallengeChunk(*this);
     }
 
-    if(roundAbout)
-    {
-        for(int i = 0; i != 360; i++)
-        {
-            for(int t = 0; t != 8; t++)
-            {
-                sf::Vector2f tilePosF = math::angleCalc(sf::Vector2f(16,16),i,t);
-                sf::Vector2i tilePos(tilePosF.x,tilePosF.y);
-                buildTile(tiles[tilePos.x][tilePos.y],ChunkTile::FLOOR);
-            }
-        }
-    }
+
 
 
 
@@ -2648,11 +2691,11 @@ void drawWorld()
 
         sf::Color chunkColor = sf::Color::White;
         if(chunk.deadEnd)
-            chunkColor = sf::Color(200,0,0);
+            chunkColor = sf::Color(250,200,200);
         if(chunk.startingPoint)
-            chunkColor = sf::Color(0,0,200);
+            chunkColor = sf::Color(200,200,250);
         if(chunk.bonusChunk)
-            chunkColor = sf::Color(0,200,0);
+            chunkColor = sf::Color(200,250,200);
 
         for(int i = 0; i != 32; i++)
             for(int t = 0; t != 32; t++)
