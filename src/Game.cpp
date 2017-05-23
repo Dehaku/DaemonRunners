@@ -462,14 +462,16 @@ public:
                 shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+50,chunk.pos.y+50,sf::Color(100,100,100));
 
             // Open Path Waypoints
+
             if(chunk.paths.north)
-                shapes.createCircle(chunk.pos.x+25,chunk.pos.y+25-20,5,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25,chunk.pos.y+25-25,2,sf::Color::Blue);
             if(chunk.paths.east)
-                shapes.createCircle(chunk.pos.x+25+20,chunk.pos.y+25,5,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25+25,chunk.pos.y+25,2,sf::Color::Blue);
             if(chunk.paths.south)
-                shapes.createCircle(chunk.pos.x+25,chunk.pos.y+25+20,5,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25,chunk.pos.y+25+25,2,sf::Color::Blue);
             if(chunk.paths.west)
-                shapes.createCircle(chunk.pos.x+25-20,chunk.pos.y+25,5,sf::Color::Blue);
+                shapes.createLine(chunk.pos.x+25,chunk.pos.y+25,chunk.pos.x+25-25,chunk.pos.y+25,2,sf::Color::Blue);
+
 
             shapes.createText(chunk.pos.x+25,chunk.pos.y+25,10,sf::Color::White,std::to_string(chunkCount));
 
