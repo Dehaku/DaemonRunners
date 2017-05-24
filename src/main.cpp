@@ -4,7 +4,6 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "Quadtree.h"
 
 #include "Text.h"
 #include "globalvars.h"
@@ -402,8 +401,6 @@ int main()
 
         // Program Specific Components
 
-        if(inputState.key[Key::RShift].time == 1)
-            simulationInitialization();
 
 
 

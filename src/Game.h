@@ -6,7 +6,6 @@
 #include <list>
 #include <memory>
 
-#include "Quadtree.h"
 
 #include "Text.h"
 
@@ -14,9 +13,6 @@
 #include "math.h"
 #include "Tiles.h"
 
-#include "Simulation.h"
-
-#include "Organism.h"
 #include "util.h"
 #include "Networking.h"
 #include "Textures.h"
@@ -52,9 +48,7 @@ extern StateTracker stateTracker;
 
 bool chatCommand(std::string input);
 
-void simulationInitialization();
 
-void displayCritters();
 
 void gameSetup();
 

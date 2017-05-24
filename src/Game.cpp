@@ -530,6 +530,7 @@ public:
             }
 
         }
+        return false;
     }
 
     void furnishChunks()
@@ -545,7 +546,7 @@ class WorldManager
 {
 public:
     std::list<World> worlds;
-    void generateWorld(int minSize = 3, int maxSize = 10)
+    void generateWorld(unsigned int minSize = 3, int maxSize = 10)
     {
         bool properSize = false;
         World world;
@@ -839,12 +840,36 @@ public:
 WorldManager worldManager;
 
 
+class Trait
+{
+    std::string name;
+    int stackable;
+
+    enum traitID
+    {
+        HealingWounds,
+        Armor,
+        EnergyShield,
+        EnergyShieldHardening,
+        DemolitionsExpert,
+        QuickRenewal,
+        Sprinter
+    };
+
+};
+
 class Player
 {
 public:
 
+    std::string name;
     sf::Vector2f pos;
     sf::Vector2f lastValidPos;
+
+    std::list<Trait> traits;
+
+
+
     float rotation;
     float rotationSpeed;
     sf::Vector2f rotationPoint;
@@ -903,10 +928,6 @@ public:
         }
 
         { // Movement Code
-            bool movedLeft = false;
-            bool movedRight = false;
-            bool movedUp = false;
-            bool movedDown = false;
 
             float xMovement = 0;
             float yMovement = 0;
@@ -914,29 +935,21 @@ public:
             if(inputState.key[Key::W])
             {
                 yMovement += -player.moveSpeed;
-                //player.pos += sf::Vector2f(0,-player.moveSpeed);
-                movedUp = true;
             }
 
             if(inputState.key[Key::A])
             {
                 xMovement += -player.moveSpeed;
-                //player.pos += sf::Vector2f(-player.moveSpeed,0);
-                movedLeft = true;
             }
 
             if(inputState.key[Key::S])
             {
                 yMovement += player.moveSpeed;
-                //player.pos += sf::Vector2f(0,player.moveSpeed);
-                movedDown = true;
             }
 
             if(inputState.key[Key::D])
             {
                 xMovement += player.moveSpeed;
-                //player.pos += sf::Vector2f(player.moveSpeed,0);
-                movedRight = true;
             }
 
 
@@ -1036,367 +1049,9 @@ bool playerCamera()
    return true;
 }
 
-sf::Packet& operator <<(sf::Packet& packet, const Brain& brain)
-{
-    return packet
-    << brain.desiresMate
-    << brain.desiredPos.x
-    << brain.desiredPos.y;
 
-}
 
-sf::Packet& operator >>(sf::Packet& packet, Brain& brain)
-{
-    return packet
-    >> brain.desiresMate
-    >> brain.desiredPos.x
-    >> brain.desiredPos.y;
-}
 
-sf::Packet& operator <<(sf::Packet& packet, const Organism& critter)
-{
-
-    packet
-    << sf::Uint32(critter.ID)
-    << critter.pos.x
-    << critter.pos.y
-
-    << critter.healthMax
-    << critter.health
-    << critter.baseSpeed
-    << critter.size
-    << critter.nutritionMax
-    << critter.nutrition
-    << critter.hydrationMax
-    << critter.hydration
-    << critter.isStillHungry
-
-    << critter.name
-    << critter.colorPrime.r
-    << critter.colorPrime.g
-    << critter.colorPrime.b
-    << critter.colorPrime.a
-    << critter.colorSecondary.r
-    << critter.colorSecondary.g
-    << critter.colorSecondary.b
-    << critter.colorSecondary.a
-
-    << critter.ageMax
-    << critter.age
-    << critter.gestationPeriodBase
-    << critter.gestationTime;
-
-
-
-
-    { // Traits
-        // Amount of traits
-        packet << sf::Uint32(critter.traits.size());
-        for(auto &trait : critter.traits)
-        {
-            packet << sf::Uint32(trait.type);
-            packet << sf::Uint32(trait.vars.size()); // Amount of Variables
-
-            for(auto variable : trait.vars)
-                packet << variable;
-        }
-    }
-
-
-    return packet;
-}
-
-sf::Packet& operator >>(sf::Packet& packet, Organism& critter)
-{
-
-    packet
-    >> critter.ID
-    >> critter.pos.x
-    >> critter.pos.y
-
-    >> critter.healthMax
-    >> critter.health
-    >> critter.baseSpeed
-    >> critter.size
-    >> critter.nutritionMax
-    >> critter.nutrition
-    >> critter.hydrationMax
-    >> critter.hydration
-    >> critter.isStillHungry
-
-    >> critter.name
-    >> critter.colorPrime.r
-    >> critter.colorPrime.g
-    >> critter.colorPrime.b
-    >> critter.colorPrime.a
-    >> critter.colorSecondary.r
-    >> critter.colorSecondary.g
-    >> critter.colorSecondary.b
-    >> critter.colorSecondary.a
-
-    >> critter.ageMax
-    >> critter.age
-    >> critter.gestationPeriodBase
-    >> critter.gestationTime;
-
-
-
-    { // Traits
-        critter.traits.clear();
-        // Amount of traits
-        int amountOfTraits;
-        packet >> amountOfTraits;
-
-        for(int i = 0; i != amountOfTraits; i++)
-        {
-            Trait trait;
-            packet >> trait.type;
-
-            int amountOfVars;
-            packet >> amountOfVars; // Amount of Variables
-            for(int t = 0; t != amountOfVars; t++)
-            {
-                float variable;
-                packet >> variable;
-                trait.vars.push_back(variable);
-            }
-
-            critter.traits.push_back(trait);
-        }
-    }
-
-    return packet;
-}
-
-struct CritterPositions
-{
-    sf::Vector2f position;
-    bool brainBool;
-    sf::Vector2f desiredPosition;
-    CritterPositions()
-    {
-        brainBool = false;
-    }
-
-    CritterPositions(Organism Critter)
-    {
-        position = Critter.pos;
-        if(auto thisBrain = Critter.brain.lock())
-        {
-            brainBool = true;
-            desiredPosition = thisBrain->desiredPos;
-        }
-        else
-            brainBool = false;
-
-    }
-};
-
-sf::Packet& operator <<(sf::Packet& packet, const CritterPositions& critter)
-{
-    return packet
-    << critter.position.x
-    << critter.position.y
-    << critter.brainBool
-    << critter.desiredPosition.x
-    << critter.desiredPosition.y;
-}
-
-sf::Packet& operator >>(sf::Packet& packet, CritterPositions& critter)
-{
-    return packet
-    >> critter.position.x
-    >> critter.position.y
-    >> critter.brainBool
-    >> critter.desiredPosition.x
-    >> critter.desiredPosition.y;
-}
-
-sf::Packet& operator <<(sf::Packet& packet, const WorldTile& tile)
-{
-    return packet
-    << tile.color.r
-    << tile.color.g
-    << tile.color.b
-    << tile.color.a
-    << sf::Uint8(tile.isWater)
-    << tile.moveSpeedModifier
-    << tile.temperature;
-
-}
-
-sf::Packet& operator >>(sf::Packet& packet, WorldTile& tile)
-{
-    return packet
-    >> tile.color.r
-    >> tile.color.g
-    >> tile.color.b
-    >> tile.color.a
-    >> tile.isWater
-    >> tile.moveSpeedModifier
-    >> tile.temperature;
-}
-
-sf::Packet& operator <<(sf::Packet& packet, const Simulation& sim)
-{
-    // ID
-    // Organism Pop
-    // Organism then Brain
-    // Flora Pop
-    // Flora
-    // Tiles
-    // Runtime
-
-    packet << sf::Uint32(sim.simulationID);
-    packet << sf::Uint32(sim.populationID);
-    packet << sf::Uint32(sim.populationAll);
-
-    packet << sf::Uint32(sim.organisms.size());
-
-    std::cout << "Population: " << sim.organisms.size() << std::endl;
-
-    int counter = 0;
-    std::cout << "Syncing Critters \n";
-    for(auto &critter : sim.organisms)
-    {
-        counter++;
-        packet << *(critter.get());
-        packet << *(critter.get()->brain.lock());
-    }
-    std::cout << "Critters Synced" << std::endl;
-    std::cout << "Syncing Plants \n";
-    packet << sf::Uint32(sim.flora.size());
-    for(auto &plant : sim.flora)
-    {
-        packet << *(plant.get());
-    }
-    std::cout << "Plants Synced \n";
-
-    packet << sf::Uint32(sim.worldTiles.size());
-    packet << sf::Uint32(sim.worldTiles[0].size()); // We only allow square worlds, so using 0 is just fine.
-    packet << sf::Uint32(sim.worldTileSizeX);
-    packet << sf::Uint32(sim.worldTileSizeY);
-
-    for(int i = 0; i != sim.worldTiles.size(); i++)
-        for(int t = 0; t != sim.worldTiles[0].size(); t++)
-            packet << sim.worldTiles[i][t];
-
-
-
-    return packet;
-}
-
-sf::Packet& operator >>(sf::Packet& packet, Simulation& sim)
-{
-    packet >> sim.simulationID;
-    packet >> sim.populationID;
-    packet >> sim.populationAll;
-
-    int critterPop;
-    packet >> critterPop;
-
-    std::cout << "Population: " << critterPop << std::endl;
-
-    for(int i = 0; i != critterPop; i++)
-    {
-        // Create critter
-        std::shared_ptr<Organism> Critter(new Organism());
-        sim.organisms.push_back(Critter);
-
-        // Extract and Overwrite
-        packet >> *(sim.organisms.back().get());
-
-        // Create Brain
-        std::shared_ptr<Brain> creatureBrain(new Brain());
-        sim.brainStorage.push_back(creatureBrain);
-
-        // Extract and Overwrite
-        packet >> *(sim.brainStorage.back().get());
-
-        // Link brains and bodies.
-        sim.organisms.back().get()->brain = sim.brainStorage.back();
-        sim.brainStorage.back().get()->owner = sim.organisms.back();
-    }
-
-    int plantPop;
-    packet >> plantPop;
-    for(int i = 0; i != plantPop; i++)
-    {
-
-        // Create plant
-        std::shared_ptr<Organism> plant(new Organism());
-        sim.flora.push_back(plant);
-
-        // Extract and Overwrite
-        packet >> *(sim.flora.back().get());
-
-    }
-
-
-    int iTiles;
-    int tTiles;
-    packet >> iTiles;
-    packet >> tTiles;
-    packet >> sim.worldTileSizeX;
-    packet >> sim.worldTileSizeY;
-
-    resizeWorld(iTiles,tTiles,sim.worldTiles);
-
-    for(int i = 0; i != sim.worldTiles.size(); i++)
-        for(int t = 0; t != sim.worldTiles[0].size(); t++)
-            packet >> sim.worldTiles[i][t];
-
-    return packet;
-}
-
-sf::Packet& critterStatsInsert(sf::Packet& packet, const Organism& critter)
-{
-    packet
-    << critter.age
-    << critter.ageMax
-    << critter.health
-    << critter.nutrition
-    << critter.hydration
-    << critter.size;
-
-    return packet;
-}
-
-
-sf::Packet& critterStatsExtract(sf::Packet& packet, Organism& critter)
-{
-    packet
-    >> critter.age
-    >> critter.ageMax
-    >> critter.health
-    >> critter.nutrition
-    >> critter.hydration
-    >> critter.size;
-
-    return packet;
-}
-
-
-
-
-void Simulation::syncOrganism(std::shared_ptr<Organism> critter)
-{
-    if(!network::server)
-        return;
-
-    std::cout << "Syncing " << critter.get()->name << std::endl;
-
-
-    sf::Packet packet;
-    packet << sf::Uint8(ident::organismBorn)
-    << sf::Uint32(simulationID)
-    << *(critter.get())
-    << *(critter.get()->brain.lock()) ; // TODO: Don't forget to send the brain.
-
-    sendToAllClients(packet);
-
-    //organisms.push_back(critter);
-}
 
 bool chatCommand(std::string input)
 {
@@ -1445,7 +1100,7 @@ bool chatCommand(std::string input)
         sendText.append(myProfile.name);
         sendText.append(" ");
 
-        for(int i = 1; i != elements.size(); i++)
+        for(unsigned int i = 1; i != elements.size(); i++)
         {
             sendText.append(elements[i]);
             sendText.append(" ");
@@ -1472,65 +1127,6 @@ bool chatCommand(std::string input)
         return true;
     }
 
-    if(elements[0] == "/loadCreature" || elements[0] == "/loadBlueprint" )
-    {
-        Simulation* sim = simulationManager.getCurrentSimulation();
-        if(sim == nullptr)
-        {
-            chatBox.addChat("You must have a simulation selected!");
-            return false;
-        }
-        if(elements.size() < 2)
-        {
-            chatBox.addChat("Not enough arguments.");
-            return false;
-        }
-
-        Organism critter;
-        critter.name = "Failed";
-        critter = loadCreatureBlueprint(elements[1]);
-        if(critter.name == "Failed")
-        {
-            chatBox.addChat("Failed to find blueprint.");
-            return false;
-        }
-
-
-
-
-        int spawnAmount;
-        if(elements.size() < 3)
-        {
-            spawnAmount = 1;
-        }
-        else
-            spawnAmount = std::stoi(elements[3]);
-
-        for(int i = 0; i != spawnAmount; i++)
-        {
-            std::shared_ptr<Organism> Critter(new Organism());
-            sim->organisms.push_back(Critter);
-
-            std::shared_ptr<Brain> creatureBrain(new Brain());
-            sim->brainStorage.push_back(creatureBrain);
-            sim->populationAll++;
-
-            *(Critter.get()) = critter;
-            Critter.get()->sim = sim;
-            Critter->ID = sim->populationID++;
-            Critter->pos = gvars::mousePos;
-
-            sim->organisms.back().get()->brain = sim->brainStorage.back();
-            sim->brainStorage.back().get()->owner = sim->organisms.back();
-        }
-
-
-
-
-
-
-
-    }
 
     if(elements[0] == "/connect")
     {
@@ -1584,7 +1180,7 @@ bool chatCommand(std::string input)
         try
         {
             std::string tryString = elements[2];
-            int test = std::stoi(tryString);
+            int test = std::stoi(tryString); // This is used, ignore the warning. It's a form of testing the entered string.
         }
         catch (std::exception &e)
         {
@@ -1710,199 +1306,6 @@ void clientPacketManager::handlePackets()
 
         }
 
-        else if(type == sf::Uint8(ident::simulationInitialization))
-        {
-            Simulation sim;
-            packet >> sim;
-            std::cout << "Received Sim " << sim.simulationID;
-            simulationManager.simulations.push_back(sim);
-
-            for(auto &critter : simulationManager.simulations.back().organisms)
-            {
-                critter.get()->sim = &simulationManager.simulations.back();
-            }
-
-            std::cout << ", and inserted it. \n";
-        }
-
-        else if(type == sf::Uint8(ident::simulationStopRequest))
-        {
-            unsigned int simID;
-            packet >> simID;
-            for(auto &sim : simulationManager.simulations)
-                if(sim.simulationID == simID)
-                    sim.toDelete = true;
-        }
-
-        else if(type == sf::Uint8(ident::simulationUpdate ))
-        {
-            int simCount;
-            packet >> simCount;
-            for(int i = 0; i != simCount; i++)
-            {
-                int simID;
-                int population;
-                packet >> simID;
-                packet >> population;
-                Simulation* simPtr = simulationManager.getSimulation(simID);
-                if(simPtr == nullptr)
-                {
-                    std::cout << "Attempted to update a non-existing simulation, Abandoning this packet. This is bad. \n";
-                    break;
-                }
-
-                if(population != simPtr->organisms.size())
-                    std::cout << "Population Desync! Packet: " << population << ", Us: " << simPtr->organisms.size() << std::endl;
-
-                unsigned int counter = 0;
-                for(auto &critter : simPtr->organisms)
-                {
-                    if(counter >= population)
-                        break;
-
-                    CritterPositions cPos;
-                    packet >> cPos;
-                    critterStatsExtract(packet,*critter.get());
-
-                    // Update Position
-                    critter.get()->pos = cPos.position;
-
-                    // If you've gotta brain, you gotta desire.
-                    if(cPos.brainBool && critter.get()->brain.lock())
-                        critter.get()->brain.lock()->desiredPos = cPos.desiredPosition;
-
-                    counter++;
-                }
-
-                int plantPop;
-                packet >> plantPop;
-                if(plantPop != simPtr->flora.size())
-                    std::cout << "Plant Pop Desync! Packet: " << population << ", Us: " << simPtr->flora.size() << std::endl;
-
-                counter = 0;
-                for(auto &plant : simPtr->flora)
-                {
-                    if(counter >= plantPop)
-                        break;
-
-                    CritterPositions cPos;
-                    packet >> cPos;
-                    critterStatsExtract(packet,*plant.get());
-
-                    // Update Position
-                    plant.get()->pos = cPos.position;
-
-                    counter++;
-                }
-
-            }
-        }
-
-        else if(type == sf::Uint8(ident::organismBorn ))
-        {
-            int simID;
-            packet >> simID;
-
-            for(auto &sim : simulationManager.simulations)
-            {
-                if(sim.simulationID == simID)
-                {
-                    std::shared_ptr<Organism> Critter(new Organism());
-                    sim.organisms.push_back(Critter);
-                    sim.populationAll++;
-
-                    // Extract and Overwrite
-                    packet >> *(sim.organisms.back().get());
-
-                    // Create Brain
-                    std::shared_ptr<Brain> creatureBrain(new Brain());
-                    sim.brainStorage.push_back(creatureBrain);
-
-                    // Extract and Overwrite
-                    packet >> *(sim.brainStorage.back().get());
-
-                    // Link brains and bodies.
-                    sim.organisms.back().get()->brain = sim.brainStorage.back();
-                    sim.brainStorage.back().get()->owner = sim.organisms.back();
-
-                    Critter.get()->sim = &sim;
-                    std::cout << "Received youngling: " << sim.organisms.back().get()->name << std::endl;
-                    break;
-                }
-            }
-
-
-
-
-
-
-
-
-
-        }
-
-        else if(type == sf::Uint8(ident::organismUpdate ))
-        {
-            std::cout << "Received update of ";
-            unsigned int population;
-            packet >> population;
-            std::cout << population << std::endl;
-            if(population != organisms.size())
-                std::cout << "Population Desync! Packet: " << population << ", Us: " << organisms.size() << std::endl;
-
-            unsigned int counter = 0;
-            for(auto &critter : organisms)
-            {
-                if(counter >= population)
-                    break;
-
-                CritterPositions cPos;
-                packet >> cPos;
-
-
-                // Update Position
-                critter.pos = cPos.position;
-
-                // If you've gotta brain, you gotta desire.
-                if(cPos.brainBool && critter.brain.lock())
-                    critter.brain.lock()->desiredPos = cPos.desiredPosition;
-
-                counter++;
-            }
-
-        }
-
-        else if(type == sf::Uint8(ident::organismInitialization ))
-        {
-
-
-            int population;
-            sf::Uint32 recPop;
-            packet >> recPop;
-            population = int(recPop);
-            std::cout << population << std::endl;
-
-            std::cout << "Received Organism Initial ( " << population << ") \n";
-            int counter = 0;
-
-            Organism Creature;
-            Brain brain;
-
-            for(int i = 0; i != population; i++)
-            {
-
-                packet >> Creature;
-                packet >> brain;
-
-                organisms.push_back(Creature);
-                brainStorage.push_back(brain);
-
-                //* organisms.back().brain = brainStorage.back();
-                //* brainStorage.back().owner = organisms.back();
-
-                counter++;
-            }
-        }
 
         else if(type == sf::Uint8(ident::clientID) )
         {
@@ -1956,6 +1359,8 @@ void serverPacketManager::handlePackets()
             sf::Packet sendPacket;
 
             // Send the same type back.
+            /*
+
             sendPacket << type;
             sendPacket << sf::Uint32(simulationManager.simulations.size());
 
@@ -1965,95 +1370,12 @@ void serverPacketManager::handlePackets()
                 std::cout << "Sent " << sim.simulationID << std::endl;
             }
 
+            */
+
             // TODO: Send/receive players connected here.
 
             currentPacket.sender->socket->send(sendPacket);
         }
-
-        else if(type == sf::Uint8(ident::simulationCreateRequest))
-        {
-            Simulation* createdSim = simulationManager.createSimulation();
-
-            sf::Packet returnPacket;
-            returnPacket << sf::Uint8(ident::simulationInitialization);
-            returnPacket << *createdSim;
-            sendToAllClients(returnPacket);
-
-            std::cout << "Sent Simulation to All Clients. \n";
-        }
-
-        else if(type == sf::Uint8(ident::simulationStopRequest))
-        {
-            unsigned int simID;
-            packet >> simID;
-            for(auto &sim : simulationManager.simulations)
-                if(sim.simulationID == simID)
-                {
-                    sim.toDelete = true;
-
-                    sf::Packet returnPacket;
-                    returnPacket << sf::Uint8(ident::simulationStopRequest)
-                            << sf::Uint32(sim.simulationID);
-                    sendToAllClients(returnPacket);
-                }
-
-        }
-
-        else if(type == sf::Uint8(ident::simulationRequest))
-        {
-            std::cout << "Received request of simulation ";
-            int simReqID;
-            packet >> simReqID;
-            std::cout << simReqID;
-
-            Simulation* simPtr = simulationManager.getSimulation(simReqID);
-            if(simPtr == nullptr)
-            {
-                std::cout << "Failed to find " << simReqID << std::endl;
-                continue;
-            }
-            Simulation& sim = *simPtr;
-
-
-            std::cout << "Sim(" << sim.simulationID << ")";
-
-            std::cout << " has " << sim.organisms.size() << " creatures. \n";
-
-            sf::Packet returnPacket;
-            returnPacket << sf::Uint8(ident::simulationInitialization);
-            returnPacket << sim;
-
-            currentPacket.sender->socket->send(returnPacket);
-        }
-
-        else if(type == sf::Uint8(ident::organismInitialization ))
-        {
-            std::cout << "organism Initial 'Request' received from " << currentPacket.sender->id << std::endl;
-            sf::Packet sendPacket;
-
-            // Send the same type back.
-            sendPacket << type;
-            sendPacket << sf::Uint32(organisms.size());
-            int numbers = int(sf::Uint32(organisms.size()));
-            std::cout << "Things: " << organisms.size() << "/" << sf::Uint32(organisms.size()) << "/" << numbers << std::endl;
-
-            for(auto &critter : organisms)
-            {
-                sendPacket << critter;
-                //* sendPacket << *(critter.brain);
-            }
-
-
-
-
-            currentPacket.sender->socket->send(sendPacket);
-
-        }
-        else if(type == sf::Uint8(ident::floraInitialization) )
-        {
-            std::cout << "flora Initial 'Request' received from " << currentPacket.sender->id << std::endl;
-        }
-
 
         else if(type == sf::Uint8(ident::clientID) )
         {
@@ -2097,18 +1419,7 @@ void HUDTabs()
 
 
     std::string simAddon = "";
-    if(simulationManager.simulations.size() > 0)
-    {
-        simAddon.append("("+std::to_string(simulationManager.drawSimNumber+1)+"/"+std::to_string(simulationManager.simulations.size())+")");
-        simAddon.append("\n");
-        Simulation* sim = simulationManager.getCurrentSimulation();
-        if(sim != nullptr)
-        {
-            simAddon.append("("+std::to_string(sim->populationAlive)+"/"+std::to_string(sim->populationDead)+"/"+std::to_string(sim->populationAll)+")");
-        }
 
-
-    }
 
 
     int simulationButt = shapes.createImageButton(sf::Vector2f(391,190),*hudButton,"",0,&gvars::hudView);
@@ -2177,8 +1488,6 @@ void HUDTabs()
         int posY = 190;
         shapes.createSquare(posX-105,posY-15,posX+106,posY+15,sf::Color(255,255,255,150),0,sf::Color::White,&gvars::hudView);
 
-        if(inputState.rmbTime == 1 && simulationManager.simulations.size() > 0)
-            simulationManager.simulations.pop_back();
 
     }
     if(shapes.shapeHovered(contestButt))
@@ -2272,7 +1581,7 @@ void drawChat()
         //std::cout << "ChatSize: " << std::max(chatBox.chatStorage.size()-10,0) << std::endl;
 
         //for(int i = chatBox.chatStorage.size(); (i != 0 && i >= chatBox.chatStorage.size()-10); i--)
-        for(int i = chatBox.chatStorage.size()-1; i >= chatBox.chatStorage.size()-10; i--)
+        for(unsigned int i = chatBox.chatStorage.size()-1; i >= chatBox.chatStorage.size()-10; i--)
         {
 
             sfe::RichText chatText(gvars::defaultFont);
@@ -2314,7 +1623,7 @@ void drawChat()
 
     if(network::chatting)
     {
-        int chatGrowth = chatText.getLocalBounds().width;
+        // int chatGrowth = chatText.getLocalBounds().width;
         shapes.createSquare(xDraw-10,yDraw,xDraw+1200,yDraw+22,sf::Color(0,0,0,100),0,sf::Color::Transparent, &gvars::hudView);
 
         shapes.createRichText(chatText, &gvars::hudView);
@@ -2323,7 +1632,7 @@ void drawChat()
 
 void drawMainMenu()
 {
-    int mainButt = shapes.createImageButton(sf::Vector2f(500,500),texturemanager.getTexture("DaemonRunnersMain.png"),"",0,&gvars::hudView);
+    shapes.createImageButton(sf::Vector2f(500,500),texturemanager.getTexture("DaemonRunnersMain.png"),"",0,&gvars::hudView);
 
     sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
 
@@ -2391,8 +1700,7 @@ void drawMainMenu()
         int posX = 391;
         shapes.createSquare(posX-105,posY-15,posX+106,posY+15,sf::Color(255,255,255,150),0,sf::Color::White,&gvars::hudView);
 
-        if(inputState.rmbTime == 1 && simulationManager.simulations.size() > 0)
-            simulationManager.simulations.pop_back();
+
 
     }
     if(shapes.shapeHovered(optionsButt))
@@ -2434,99 +1742,29 @@ void simulationMenu()
     {
         if(inputState.lmbTime == 1)
         {
-            Simulation* createdSim = simulationManager.createSimulation();
+            // Simulation* createdSim = simulationManager.createSimulation();
 
             if(network::server)
             {
+                /*
+
                 sf::Packet returnPacket;
                 returnPacket << sf::Uint8(ident::simulationInitialization);
                 returnPacket << *createdSim;
                 sendToAllClients(returnPacket);
 
                 std::cout << "Sent Simulation to All Clients. \n";
+
+                */
             }
         }
     }
 
 
     sf::Vector2f simListPos(191,291);
-    int yOffset = 0;
-    int simCounter = 0;
-    for(auto &sim : simulationManager.simulations)
-    {
-        shapes.createText(simListPos.x,simListPos.y+(12*yOffset),12,sf::Color::Cyan,"Simulation " + std::to_string(sim.simulationID),&gvars::hudView);
-        int mysteryButt = shapes.createImageButton(sf::Vector2f(15+simListPos.x-90,15+simListPos.y+(12*yOffset)),*arrowButton,"",0,&gvars::hudView);
-        int deleteButt = shapes.createImageButton(sf::Vector2f(15+simListPos.x-60,15+simListPos.y+(12*yOffset)),*arrowButton,"",0,&gvars::hudView);
-        int viewButt = shapes.createImageButton(sf::Vector2f(15+simListPos.x-30,15+simListPos.y+(12*yOffset)),*arrowButton,"",0,&gvars::hudView);
+    // int yOffset = 0;
+    // int simCounter = 0;
 
-
-
-        yOffset++;
-        std::string popString;
-        popString.append("Pop: ");
-        popString.append(std::to_string(sim.populationAlive) + "/");
-        popString.append(std::to_string(sim.populationDead) + "/");
-        popString.append(std::to_string(sim.populationAll));
-        shapes.createText(simListPos.x,simListPos.y+(12*yOffset),12,sf::Color::Cyan,popString,&gvars::hudView);
-
-
-
-
-
-        if(shapes.shapeHovered(mysteryButt))
-        {
-            shapes.createText(gvars::mousePos.x,gvars::mousePos.y,12,sf::Color::White,"\n   Mystery Sim " + std::to_string(sim.simulationID));
-        }
-        if(shapes.shapeHovered(deleteButt))
-        {
-            std::string deleteIndicator;
-            if(inputState.lmbTime == 1 && inputState.key[Key::LShift])
-            {
-                if(network::client)
-                {
-                    sf::Packet packet;
-                    packet << sf::Uint8(ident::simulationStopRequest)
-                        << sf::Uint32(sim.simulationID);
-                    serverSocket.send(packet);
-                }
-                else
-                {
-                    sim.toDelete = true;
-                    // TODO: Instead of deleting a simulation, move it to another container without creature loops.
-                    // That way clients can 'withdraw' their blueprints at their leisure.
-
-
-                    if(network::server)
-                    {
-                        sf::Packet packet;
-                        packet << sf::Uint8(ident::simulationStopRequest)
-                            << sf::Uint32(sim.simulationID);
-                        sendToAllClients(packet);
-                    }
-                }
-
-
-            }
-            shapes.createText(gvars::mousePos.x,gvars::mousePos.y,12,sf::Color::White,"\n   (Hold Left Shift) Delete Sim " + std::to_string(sim.simulationID) + deleteIndicator);
-
-        }
-        if(shapes.shapeHovered(viewButt))
-        {
-            shapes.createText(gvars::mousePos.x,gvars::mousePos.y,12,sf::Color::White,"\n   View Sim " + std::to_string(sim.simulationID));
-            if(inputState.lmbTime == 1)
-            {
-                int &simDraw = simulationManager.drawSimNumber;
-                simDraw = simCounter;
-                stateTracker.currentState = StateTracker::mainLoop;
-            }
-
-        }
-
-
-        yOffset++;
-        yOffset++;
-        simCounter++;
-    }
 
 
 
@@ -2751,113 +1989,6 @@ void chatStuffs()
 
 }
 
-void drawSelectedOrganismInfo()
-{
-    if(generalTracker.selectedOrganism.lock())
-    {
-        Organism& critter = *generalTracker.selectedOrganism.lock().get();
-
-        if(inputState.key[Key::B].time == 1)
-        {
-            critter.gestationTime = 4500;
-        }
-
-
-        sf::Vector2f drawPos(critter.pos.x+50,critter.pos.y-25);
-        sfe::RichText richText;
-        richText.setCharacterSize(12);
-        richText.setFont(gvars::defaultFont);
-        richText.setPosition(drawPos);
-
-
-        richText << sf::Text::Bold << critter.name << "(" << std::to_string(critter.ID) << ")" << "\n"
-        << sf::Text::Regular
-        << "Age: " << std::to_string(critter.age) << "/" << std::to_string(critter.ageMax) << " \n"
-        << "Speed: " << std::to_string(critter.getSpeed()) << " \n"
-        << "Size: " << std::to_string(critter.size) << " \n"
-        << "Health: " << std::to_string(critter.health) << "/" << std::to_string(critter.getHealthMax()) << " \n"
-        << "Hunger: " << std::to_string(critter.nutrition) << "/" << std::to_string(critter.getNutritionMax()) << " \n"
-        << "Hydration: " << std::to_string(critter.hydration) << "/" << std::to_string(critter.getHydrationMax()) << " \n"
-        << "Gestation: " << std::to_string(critter.gestationTime) << "/" << std::to_string(critter.getGestationPeriod() ) << " \n";
-
-        // Traits
-        {
-            richText << sf::Color::Yellow <<sf::Text::Bold << " \n *Traits* \n" << sf::Text::Regular;
-            for(auto &trait : critter.traits)
-            {
-                std::string nameThing;
-                if(trait.type == TraitID::Detritivore) // TODO: Make these into a function.
-                    nameThing = "Detritivore";
-                else if(trait.type == TraitID::Herbivore)
-                    nameThing = "Herbivore";
-                else if(trait.type == TraitID::Carnivore)
-                    nameThing = "Carnivore";
-                else if(trait.type == TraitID::Teeth)
-                    nameThing = "Teeth";
-                else if(trait.type == TraitID::Blades)
-                    nameThing = "Blades";
-                else if(trait.type == TraitID::Spikes)
-                    nameThing = "Spikes";
-                else if(trait.type == TraitID::Claws)
-                    nameThing = "Claws";
-                else if(trait.type == TraitID::Shell)
-                    nameThing = "Shell";
-                else if(trait.type == TraitID::Scales)
-                    nameThing = "Scales";
-                else if(trait.type == TraitID::Hide)
-                    nameThing = "Hide";
-                else if(trait.type == TraitID::FireBreath)
-                    nameThing = "FireBreath";
-                else if(trait.type == TraitID::PsychicCrush)
-                    nameThing = "PsychicCrush";
-                richText << nameThing << "";
-                for(auto &variable : trait.vars)
-                {
-                    richText << " : " << std::to_string(variable);
-                }
-                richText << "\n";
-            }
-        }
-
-        sf::Vector2f drawPosEnd(drawPos.x + richText.getGlobalBounds().width, drawPos.y + richText.getGlobalBounds().height);
-
-        shapes.createLine(drawPos.x,drawPos.y,critter.pos.x,critter.pos.y,2,sf::Color::Cyan);
-        shapes.createLine(drawPos.x,drawPosEnd.y,critter.pos.x,critter.pos.y,2,sf::Color::Cyan);
-
-        shapes.createSquare(drawPos.x,drawPos.y,drawPosEnd.x,drawPosEnd.y, sf::Color(0,0,0,150),2,sf::Color::Cyan);
-        shapes.createRichText(richText);
-        shapes.shapes.back().offscreenRender = true;
-
-    }
-}
-
-void selectOrganism()
-{
-    if(inputState.lmbTime == 1)
-    {
-        Simulation* sim = simulationManager.getCurrentSimulation();
-
-        if(sim != nullptr)
-        {
-            bool foundCritter = false;
-            for(auto &critter : sim->organisms)
-            {
-                Organism &crit = *critter.get();
-                int distance = math::distance(gvars::mousePos,crit.pos);
-                if(distance < crit.size)
-                {
-                    generalTracker.selectedOrganism = critter;
-                    foundCritter = true;
-                }
-            }
-            if(!foundCritter)
-                generalTracker.selectedOrganism.reset();
-        }
-    }
-
-    drawSelectedOrganismInfo();
-}
-
 
 void generalFunctions()
 {
@@ -2869,20 +2000,7 @@ void generalFunctions()
     if(inputState.key[Key::Y].time == 1)
         worldManager.worlds.back().printWalkables();
 
-    if(inputState.key[Key::Pause].time == 1)
-    {
-        if(network::client)
-        {
-            // TODO: Request server pause.
-        }
-        else
-        {
-            Simulation* sim = simulationManager.getCurrentSimulation();
-            if(sim != nullptr)
-                toggle(sim->paused);
-        }
 
-    }
 
 
     if(inputState.key[Key::LControl] && inputState.lmbTime == 1)
@@ -2903,42 +2021,11 @@ void generalFunctions()
         playerManager.players.push_back(player);
     }
 
-     if(inputState.key[Key::LControl].time == 1 && inputState.key[Key::O])
-    {
-        Simulation* sim = simulationManager.getCurrentSimulation();
-        if(sim != nullptr)
-        {
-            for(auto &critter : sim->organisms)
-                critter->health = -1;
-        }
 
 
-    }
 
-     if(inputState.key[Key::Equal].time == 1)
-        {
-            Simulation* createdSim = simulationManager.createSimulation();
 
-            if(network::server)
-            {
-                sf::Packet returnPacket;
-                returnPacket << sf::Uint8(ident::simulationInitialization);
-                returnPacket << *createdSim;
-                sendToAllClients(returnPacket);
 
-                std::cout << "Sent Simulation to All Clients. \n";
-            }
-
-        }
-
-    if(inputState.key[Key::Y].time == 1)
-    {
-        if(generalTracker.selectedOrganism.lock())
-        {
-            Organism& critter = *generalTracker.selectedOrganism.lock().get();
-            saveCreatureBlueprint(critter);
-        }
-    }
 
 }
 
@@ -3189,17 +2276,7 @@ void renderGame()
     {
 
 
-        if(simulationManager.simulations.size() > 0)
-        {
-            int i = 0;
-            for(auto &sim : simulationManager.simulations)
-            {
-                if(i == simulationManager.drawSimNumber)
-                    sim.drawCritters();
 
-                i++;
-            }
-        }
 
         drawHUD();
         drawFPSandData();
@@ -3210,30 +2287,8 @@ void renderGame()
         drawSubMain();
     }
 
-    selectOrganism();
 
-     if(inputState.key[Key::H])
-    {
-        {
-            Simulation* sim = simulationManager.getCurrentSimulation();
 
-            if(sim != nullptr)
-            {
-                for(auto &critter : sim->organisms)
-                {
-                    Organism &crit = *critter.get();
-
-                    for(auto &trait : crit.traits)
-                    {
-                        if(trait.type == TraitID::Carnivore)
-                        {
-                            shapes.createLine(crit.pos.x,crit.pos.y,gvars::mousePos.x,gvars::mousePos.y,3,sf::Color::Cyan);
-                        }
-                    }
-                }
-            }
-        }
-    }
 
 
     /*
@@ -3256,48 +2311,7 @@ void renderGame()
     }
     */
 
-    if(simulationManager.getCurrentSimulation() != nullptr)//if(inputState.key[Key::J])
-    {
 
-
-        /*
-        if(inputState.key[Key::LShift])
-            shapes.createSquare(gvars::mousePos.x-100,gvars::mousePos.y-100,gvars::mousePos.x+100,gvars::mousePos.y+100,sf::Color::Transparent,1,sf::Color::Cyan);
-
-        AABB getPos = AABB(gvars::mousePos,sf::Vector2f(1000,1000));
-        std::vector<Data<std::shared_ptr<Organism>>> closeOnes = simulationManager.getCurrentSimulation()->floraQT.queryRange(getPos);
-
-        for(auto nearCrit : closeOnes)
-        {
-            std::shared_ptr<Organism>& crit = *nearCrit.load;
-
-            if(inputState.key[Key::LShift])
-                shapes.createLine(crit->pos.x,crit->pos.y,gvars::mousePos.x,gvars::mousePos.y,1,sf::Color::Cyan);
-        }
-        */
-
-
-    }
-
-    if(inputState.key[Key::U])
-    {
-
-        if(inputState.key[Key::LShift])
-            shapes.createSquare(gvars::mousePos.x-100,gvars::mousePos.y-100,gvars::mousePos.x+100,gvars::mousePos.y+100,sf::Color::Transparent,1,sf::Color::Cyan);
-
-        AABB getPos = AABB(gvars::mousePos,sf::Vector2f(1000,1000));
-        //std::vector<Data<std::shared_ptr<Organism>>> closeOnes = ;
-
-        for(auto nearCrit : simulationManager.getCurrentSimulation()->floraQT.queryRange(getPos))
-        {
-            std::shared_ptr<Organism>& crit = *nearCrit.load;
-
-            if(inputState.key[Key::LShift])
-                shapes.createLine(crit->pos.x,crit->pos.y,gvars::mousePos.x,gvars::mousePos.y,1,sf::Color::Cyan);
-        }
-
-
-    }
 
     generalFunctionsPostRender();
 
@@ -3306,47 +2320,6 @@ void renderGame()
 sf::Thread serverListenThread(&serverListen);
 sf::Thread clientListenThread(&clientListen);
 
-void sendLifeUpdate()
-{
-    // TODO: Maybe: Perhaps have the clients request updates, rather than constantly pinging them with it.
-    std::cout << "Sending Life Update! \n";
-    sf::Packet packet;
-
-    // Labeling the type of packet.
-    packet << sf::Uint8(ident::simulationUpdate);
-
-    // Sending amount of simulations.
-    packet << sf::Uint32(simulationManager.simulations.size());
-
-    // Sending the simulations infos...
-    for(auto &sim : simulationManager.simulations)
-    {
-        // First, Sim ID
-        packet << sf::Uint32(sim.simulationID);
-
-        // Amount of organisms.
-        packet << sf::Uint32(sim.organisms.size());
-
-        // Then the Organism updates.
-        for(auto &critter : sim.organisms)
-        {
-            CritterPositions CPos(*critter.get());
-            packet << CPos;
-            critterStatsInsert(packet,*critter.get());
-        }
-
-        // Amount of Plants
-        packet << sf::Uint32(sim.flora.size());
-        for(auto &plant : sim.flora)
-        {
-            CritterPositions CPos(*plant.get());
-            packet << CPos;
-            critterStatsInsert(packet,*plant.get());
-        }
-
-    }
-    sendToAllClients(packet);
-}
 
 void runOneSecond()
 {
@@ -3455,8 +2428,8 @@ void runServerStuffs()
         runOneSecond();
         oneSecondPassed = false;
 
-        if(network::server)
-            sendLifeUpdate();
+        // if(network::server)
+        //    sendLifeUpdate();
         //std::cout << "One Second Passed! \n";
     }
     if(tenSecondPassed)
@@ -3481,13 +2454,7 @@ void runServerStuffs()
 
 }
 
-void simulationInitialization()
-{
-    worldTilesSetup(worldTiles);
-    organisms.clear();
-    flora.clear();
-    worldPopulationSetup();
-}
+
 
 
 
@@ -3499,10 +2466,6 @@ void runGame()
 
     playerManager.runPlayerCharacterLogic();
 
-    simulationManager.runSimulations();
-    // for(auto &sim : simulationManager.simulations)
-     //   sim.runLife(); // runBrains(sim.organisms);
-    //runBrains(organisms);
 
 
 

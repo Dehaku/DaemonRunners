@@ -28,9 +28,13 @@ void fpsTracker::calcFPS()
     framesPassed++;
     framesPassedTotal++;
 
+
+    /*
     float estimatedFPS = -1;
     if(fpsTimerLive.getElapsedTime().asMilliseconds() != 0)
         estimatedFPS = 1000/fpsTimerLive.getElapsedTime().asMilliseconds();
+
+    */
     fpsTimerLive.restart();
 
     if(fpsTimer.getElapsedTime().asMilliseconds() >= 1000)
