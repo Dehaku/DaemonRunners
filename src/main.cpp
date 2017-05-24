@@ -367,7 +367,7 @@ int main()
             //network::chatting = true;
         }
 
-        if(inputState.key[Key::Left].time == 1)
+        if(inputState.key[Key::Left].time == 1 && true == false)
         {
             if(dt < 0.00002)
                 dt += 0.000001;
@@ -380,7 +380,7 @@ int main()
 
             std::cout << "DT: " << dt << std::endl;
         }
-        if(inputState.key[Key::Right].time == 1)
+        if(inputState.key[Key::Right].time == 1 && true == false)
         {
             if(dt > 0.002)
                 dt -= 0.001;
@@ -390,7 +390,7 @@ int main()
                 dt -= 0.00001;
         }
         if(inputState.key[Key::Down].time == 1 || inputState.key[Key::Up].time == 1 )
-            dt = 0.01;
+            dt = 0.017;
 
         //if(inputState.key[Key::Pause].time == 1)
             //dt = 2000000;

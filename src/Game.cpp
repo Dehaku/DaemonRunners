@@ -760,6 +760,75 @@ public:
 };
 WorldManager worldManager;
 
+
+class Player
+{
+public:
+
+    sf::Vector2f pos;
+    float rotation;
+    float rotationSpeed;
+    sf::Vector2f rotationPoint;
+
+    float health;
+    float healthMax;
+    float moveSpeed;
+    float stamina;
+    float staminaMax;
+
+
+
+};
+
+class PlayerManager
+{
+public:
+    std::list<Player> players;
+
+    void runPlayerCharacterLogic()
+    {
+
+        if(players.empty())
+            return;
+
+        Player& player = players.back();
+        if(inputState.key[Key::W])
+            player.pos += sf::Vector2f(0,-player.moveSpeed);
+        if(inputState.key[Key::A])
+            player.pos += sf::Vector2f(-player.moveSpeed,0);
+        if(inputState.key[Key::S])
+            player.pos += sf::Vector2f(0,player.moveSpeed);
+        if(inputState.key[Key::D])
+            player.pos += sf::Vector2f(player.moveSpeed,0);
+
+
+        player.rotationPoint = gvars::mousePos;
+
+        int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
+        int rotCheck = rotationDiff;
+        if(rotCheck < 0)
+            rotCheck = -rotCheck;
+
+        if(rotCheck < player.rotationSpeed)
+            player.rotation = math::angleBetweenVectors(player.pos,player.rotationPoint);
+        else
+        {
+            if(rotationDiff > 0)
+                player.rotation += player.rotationSpeed;
+            if(rotationDiff < 0)
+                player.rotation -= player.rotationSpeed;
+        }
+
+
+
+
+
+    }
+
+};
+PlayerManager playerManager;
+
+
 sf::Packet& operator <<(sf::Packet& packet, const Brain& brain)
 {
     return packet
@@ -2605,6 +2674,25 @@ void generalFunctions()
 
     }
 
+
+    if(inputState.key[Key::LControl] && inputState.lmbTime == 1)
+    {
+        Player player;
+        player.pos = gvars::mousePos;
+        player.healthMax = 100;
+        player.health = player.healthMax;
+        player.staminaMax = 100;
+        player.stamina = player.staminaMax;
+
+        player.rotation = 0;
+        player.rotationSpeed = 5;
+
+
+        player.moveSpeed = 1;
+
+        playerManager.players.push_back(player);
+    }
+
      if(inputState.key[Key::LControl].time == 1 && inputState.key[Key::O])
     {
         Simulation* sim = simulationManager.getCurrentSimulation();
@@ -2807,10 +2895,39 @@ void drawWorld()
 
 }
 
+void drawPlayers()
+{
+    static sf::Texture& angelTex = texturemanager.getTexture("Angel.png");
+    static sf::Sprite angelSprite;
+    if(angelSprite.getTexture() == nullptr)
+    {
+        angelSprite.setTexture(angelTex);
+        angelSprite.setOrigin(angelTex.getSize().x/2,angelTex.getSize().y/2);
+    }
+
+
+    // Setting View
+    sf::View oldView = window.getView();
+    window.setView(gvars::view1);
+
+    // Render stuffs
+    for(auto &player : playerManager.players)
+    {
+        angelSprite.setPosition(player.pos);
+        angelSprite.setRotation(player.rotation+90);
+        window.draw(angelSprite);
+    }
+
+    // Fixing View
+    window.setView(oldView);
+}
+
 void renderGame()
 {
 
     drawWorld();
+
+    drawPlayers();
 
     generalFunctions();
 
@@ -3140,7 +3257,7 @@ void runGame()
     static int globalCycle = 0;
     globalCycle++;
 
-
+    playerManager.runPlayerCharacterLogic();
 
     simulationManager.runSimulations();
     // for(auto &sim : simulationManager.simulations)

@@ -38,27 +38,32 @@ void cameraControls()
 
     while ( accumulator >= dt )
     {
-        if (inputState.key[Key::Left] || inputState.key[Key::A])
+        //if (inputState.key[Key::Left] || inputState.key[Key::A])
+        if (inputState.key[Key::Left])
             gvars::currentx--;
-        if (inputState.key[Key::Right] || inputState.key[Key::D])
+        //if (inputState.key[Key::Right] || inputState.key[Key::D])
+        if (inputState.key[Key::Right])
             gvars::currentx++;
-        if (inputState.key[Key::Up] || inputState.key[Key::W])
+        //if (inputState.key[Key::Up] || inputState.key[Key::W])
+        if (inputState.key[Key::Up])
             gvars::currenty--;
-        if (inputState.key[Key::Down] || inputState.key[Key::S])
+        //if (inputState.key[Key::Down] || inputState.key[Key::S])
+        if (inputState.key[Key::Down])
             gvars::currenty++;
-        if (inputState.key[Key::LShift] && (inputState.key[Key::Left] || inputState.key[Key::A]))
+
+        if (inputState.key[Key::LShift] && (inputState.key[Key::Left]))
             for (int i = 0; i != 4; i++)
                 gvars::currentx--;
 
-        if (inputState.key[Key::LShift] && (inputState.key[Key::Right] || inputState.key[Key::D]))
+        if (inputState.key[Key::LShift] && (inputState.key[Key::Right]))
             for (int i = 0; i != 4; i++)
                 gvars::currentx++;
 
-        if (inputState.key[Key::LShift] && (inputState.key[Key::Up] || inputState.key[Key::W]))
+        if (inputState.key[Key::LShift] && (inputState.key[Key::Up]))
             for (int i = 0; i != 4; i++)
                 gvars::currenty--;
 
-        if (inputState.key[Key::LShift] && (inputState.key[Key::Down] || inputState.key[Key::S]))
+        if (inputState.key[Key::LShift] && (inputState.key[Key::Down]))
             for (int i = 0; i != 4; i++)
                 gvars::currenty++;
 
