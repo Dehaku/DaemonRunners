@@ -1,5 +1,7 @@
 #include "Game.h"
 
+#include <iomanip>
+
 StateTracker::StateTracker()
 {
     lastState = mainMenu;
@@ -877,6 +879,8 @@ public:
     sf::Vector2f pos;
     sf::Vector2f lastValidPos;
 
+    std::string classType;
+
     std::list<Trait> traits;
     void genBaseTraits()
     {
@@ -936,10 +940,20 @@ public:
 
     unsigned int kills;
     unsigned int deaths;
-    unsigned int revives;
+    unsigned int reviveCount;
+    unsigned int revivedCount;
     unsigned int missionsComplete;
     unsigned int missionsFailed;
 
+    Player()
+    {
+        kills = 0;
+        deaths = 0;
+        reviveCount = 0;
+        revivedCount = 0;
+        missionsComplete = 0;
+        missionsFailed = 0;
+    }
 
 };
 
@@ -1873,14 +1887,30 @@ void runnersMenu()
     sf::Vector2f HUDPos(-141, 254);
 
     shapes.createText(HUDPos.x+15+xMod,HUDPos.y+15+yMod,15,sf::Color::White,"Name: " + player.name, &gvars::hudView);
+    shapes.createText(HUDPos.x+15,HUDPos.y+30,15,sf::Color::White,"Class: " + player.classType, &gvars::hudView);
 
 
     int traitOffset = 0;
     for(auto &trait : player.traits)
     {
-        shapes.createText(HUDPos.x+15,HUDPos.y+30+(15*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
+        shapes.createText(HUDPos.x+15,HUDPos.y+45+(15*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
         traitOffset++;
     }
+
+    shapes.createText(HUDPos.x+200,HUDPos.y+15,15,sf::Color::White,"*Stats* ", &gvars::hudView);
+
+    shapes.createText(HUDPos.x+200,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.moveSpeed), &gvars::hudView);
+    shapes.createText(HUDPos.x+200,HUDPos.y+45,15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
+    shapes.createText(HUDPos.x+200,HUDPos.y+60,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
+
+
+    shapes.createText(HUDPos.x+200,HUDPos.y+90,15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
+    shapes.createText(HUDPos.x+200,HUDPos.y+105,15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
+
+    shapes.createText(HUDPos.x+200,HUDPos.y+300,15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
+    shapes.createText(HUDPos.x+200,HUDPos.y+315,15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
+    shapes.createText(HUDPos.x+200,HUDPos.y+330,15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
+    //player.
 
 
 
