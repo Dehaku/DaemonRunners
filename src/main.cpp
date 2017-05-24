@@ -353,15 +353,21 @@ int main()
     double currentTime = fpsKeeper.startTime.getElapsedTime().asSeconds();
     double accumulator = 0.0;
 
+
 	// Start the game loop
     while (window.isOpen())
     {
         // Basic Program Components
         handleEvents();
         inputState.update();
-        cameraControls();
-        if(!playerCamera())
-            applyCamera();
+
+        if(!network::chatting)
+        {
+            cameraControls();
+            if(!playerCamera())
+                applyCamera();
+        }
+
 
         if(inputState.key[Key::Return].time == 1 || inputState.key[Key::T].time == 1)
         {

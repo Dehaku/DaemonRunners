@@ -447,14 +447,16 @@ public:
 
     bool isTileWalkable(sf::Vector2i pos)
     {
+        if(walkableTiles.empty())
+            return false;
+
         int tries = 0;
+
         for(auto &walkable : walkableTiles)
         {
             tries++;
             if(aabb(pos,walkable.pos.x-16,walkable.pos.x+16,walkable.pos.y-16,walkable.pos.y+16))
             {
-                std::cout << "Tries: " << tries << ": Pos, " << walkable.pos.x << "/" << walkable.pos.y << std::endl;
-                std::cout << "Pos: " << pos.x << "/" << pos.y << std::endl;
                 return true;
             }
 
@@ -537,6 +539,11 @@ public:
     {
         for(auto &chunk : chunks)
             chunk.generateTiles();
+    }
+
+    World()
+    {
+        walkableTiles.clear();
     }
 };
 
@@ -842,11 +849,15 @@ WorldManager worldManager;
 
 class Trait
 {
+public:
     std::string name;
+    int traitID;
     int stackable;
 
-    enum traitID
+    enum traitIDs
     {
+        Empty,
+        Locked,
         HealingWounds,
         Armor,
         EnergyShield,
@@ -867,6 +878,26 @@ public:
     sf::Vector2f lastValidPos;
 
     std::list<Trait> traits;
+    void genBaseTraits()
+    {
+        Trait trait;
+        trait.name = "Empty";
+        trait.traitID = Trait::Empty;
+        trait.stackable = 99999;
+        traits.push_back(trait);
+        traits.push_back(trait);
+        traits.push_back(trait);
+        traits.push_back(trait);
+
+        trait.name = "Locked";
+        trait.traitID = Trait::Locked;
+        traits.push_back(trait);
+        traits.push_back(trait);
+        traits.push_back(trait);
+        traits.push_back(trait);
+        traits.push_back(trait);
+        traits.push_back(trait);
+    }
 
 
 
@@ -903,7 +934,11 @@ public:
         return returnStatus;
     }
 
-
+    unsigned int kills;
+    unsigned int deaths;
+    unsigned int revives;
+    unsigned int missionsComplete;
+    unsigned int missionsFailed;
 
 
 };
@@ -990,13 +1025,13 @@ public:
             }
 
 
-            if(worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x+xMovement,player.pos.y) ))
+            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x+xMovement,player.pos.y) ))
             {
                 player.pos.x += xMovement;
                 player.lastValidPos = player.pos;
             }
 
-            if(worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x,player.pos.y+yMovement) ))
+            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x,player.pos.y+yMovement) ))
             {
                 player.pos.y += yMovement;
                 player.lastValidPos = player.pos;
@@ -1034,6 +1069,26 @@ public:
 
 
 
+    }
+
+    void makePlayer()
+    {
+        Player player;
+        player.pos = gvars::mousePos;
+        player.healthMax = 100;
+        player.health = player.healthMax;
+        player.staminaMax = 1000;
+        player.stamina = player.staminaMax;
+
+        player.rotation = 0;
+        player.rotationSpeed = 5;
+
+
+        player.moveSpeed = 1;
+
+        player.genBaseTraits();
+
+        players.push_back(player);
     }
 
 };
@@ -1786,6 +1841,51 @@ void jobsMenu()
     if(inputState.key[Key::X].time == 1)
         worldManager.worlds.clear();
 
+    drawChat();
+    drawFPSandData();
+
+}
+
+void runnersMenu()
+{
+    sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
+    sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
+
+    if(playerManager.players.empty())
+        return;
+
+    Player &player = playerManager.players.back();
+
+
+         static int xMod = 0;
+            static int yMod = 0;
+            std::cout << "X/Y Mod: " << xMod << "/" << yMod << std::endl;
+            if(inputState.key[Key::Up].time == 1 || inputState.key[Key::Up].time >= 15)
+                yMod--;
+            if(inputState.key[Key::Down].time == 1 || inputState.key[Key::Down].time >= 15)
+                yMod++;
+            if(inputState.key[Key::Left].time == 1 || inputState.key[Key::Left].time >= 15)
+                xMod--;
+            if(inputState.key[Key::Right].time == 1 || inputState.key[Key::Right].time >= 15)
+                xMod++;
+
+
+    sf::Vector2f HUDPos(-141, 254);
+
+    shapes.createText(HUDPos.x+15+xMod,HUDPos.y+15+yMod,15,sf::Color::White,"Name: " + player.name, &gvars::hudView);
+
+
+    int traitOffset = 0;
+    for(auto &trait : player.traits)
+    {
+        shapes.createText(HUDPos.x+15,HUDPos.y+30+(15*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
+        traitOffset++;
+    }
+
+
+
+
+    drawChat();
     drawFPSandData();
 
 }
@@ -1907,7 +2007,8 @@ void drawSubMain()
     if(stateTracker.currentState == stateTracker.evolution)
     {
         drawHUD();
-        shapes.createText(500,210,20,sf::Color::Cyan,"Evolution",&gvars::hudView);
+        shapes.createText(500,210,20,sf::Color::Cyan,"Runners",&gvars::hudView);
+        runnersMenu();
     }
     if(stateTracker.currentState == stateTracker.simulation)
     {
@@ -2005,20 +2106,9 @@ void generalFunctions()
 
     if(inputState.key[Key::LControl] && inputState.lmbTime == 1)
     {
-        Player player;
-        player.pos = gvars::mousePos;
-        player.healthMax = 100;
-        player.health = player.healthMax;
-        player.staminaMax = 1000;
-        player.stamina = player.staminaMax;
 
-        player.rotation = 0;
-        player.rotationSpeed = 5;
+        playerManager.makePlayer();
 
-
-        player.moveSpeed = 1;
-
-        playerManager.players.push_back(player);
     }
 
 
