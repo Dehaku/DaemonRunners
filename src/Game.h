@@ -62,6 +62,8 @@ void runServerStuffs();
 void runGame();
 void renderGame();
 
+bool playerCamera();
+
 
 
 #endif // GAME_H_INCLUDED

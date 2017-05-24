@@ -27,7 +27,7 @@ void cameraControls()
     static int CHUNK_SIZE = 0;
     // Delta Timestep
     static double t = 0.0;
-    static double dt = 0.01; // const
+    static double dt = 0.017; // const
     static double currentTime = fpsKeeper.startTime.getElapsedTime().asSeconds();
     static double accumulator = 0.0;
 
@@ -100,10 +100,15 @@ void cameraControls()
             inputState.key[Key::RShift] && gvars::currentz >= 1)
             gvars::currentz--;
 
-        gvars::view1.setCenter(gvars::currentx*10,gvars::currenty*10);
+
 
         accumulator -= dt;
             t += dt;
     }
 
+}
+
+void applyCamera()
+{
+    gvars::view1.setCenter(gvars::currentx*10,gvars::currenty*10);
 }

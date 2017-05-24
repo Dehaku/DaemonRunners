@@ -437,6 +437,68 @@ class World
 public:
     std::list<WorldChunk> chunks;
 
+    class WalkableTile
+    {
+    public:
+        sf::Vector2i pos;
+    };
+
+    std::list<WalkableTile> walkableTiles;
+
+    bool isTileWalkable(sf::Vector2i pos)
+    {
+        int tries = 0;
+        for(auto &walkable : walkableTiles)
+        {
+            tries++;
+            if(aabb(pos,walkable.pos.x-16,walkable.pos.x+16,walkable.pos.y-16,walkable.pos.y+16))
+            {
+                std::cout << "Tries: " << tries << ": Pos, " << walkable.pos.x << "/" << walkable.pos.y << std::endl;
+                std::cout << "Pos: " << pos.x << "/" << pos.y << std::endl;
+                return true;
+            }
+
+        }
+        return false;
+    }
+
+    void printWalkables()
+    {
+        int tileCount = 0;
+        for(auto &walkable : walkableTiles)
+        {
+            tileCount++;
+            if(tileCount > 200)
+                break;
+
+            std::cout << tileCount << ": " << walkable.pos.x << "/" << walkable.pos.y << std::endl;
+
+
+        }
+    }
+
+    void cacheWalkableTiles()
+    {
+        if(chunks.empty())
+            return;
+
+        WalkableTile walkable;
+        for(auto &chunk : chunks)
+        {
+            for(int i = 0; i != 32; i++)
+                for(int t = 0; t != 32; t++)
+            {
+                if(chunk.tiles[i][t].walkable)
+                {
+                    walkable.pos = sf::Vector2i(chunk.pos.x+(i*32),chunk.pos.y+(t*32));
+                    walkableTiles.push_back(walkable);
+                }
+            }
+        }
+
+    }
+
+
     bool chunkExists(sf::Vector2i chunkPos)
     {
         for(auto &chunk : chunks)
@@ -702,7 +764,23 @@ public:
 
         world.furnishChunks();
 
+        world.cacheWalkableTiles();
+        std::cout << "Found Walkable Tiles: " << world.walkableTiles.size() << std::endl;
+
         worlds.push_back(world);
+
+    }
+
+    void drawWalkableTiles()
+    {
+        if(worlds.empty())
+            return;
+        World &world = worlds.front();
+
+        for(auto &walkable : world.walkableTiles)
+        {
+            shapes.createSquare(walkable.pos.x-10,walkable.pos.y-10,walkable.pos.x+10,walkable.pos.y+10,sf::Color::Blue);
+        }
     }
 
     void drawWorld()
@@ -766,6 +844,7 @@ class Player
 public:
 
     sf::Vector2f pos;
+    sf::Vector2f lastValidPos;
     float rotation;
     float rotationSpeed;
     sf::Vector2f rotationPoint;
@@ -775,6 +854,30 @@ public:
     float moveSpeed;
     float stamina;
     float staminaMax;
+    float getStaminaMax()
+    {
+        return staminaMax;
+    }
+    bool isStillTired;
+    bool isTired()
+    {
+        bool returnStatus = false;
+
+        if(stamina > getStaminaMax()*0.25)
+            isStillTired = false;
+
+        if(stamina <= 0)
+        {
+            isStillTired = true;
+            returnStatus = true;
+        }
+
+        if(isStillTired)
+            returnStatus = true;
+
+        return returnStatus;
+    }
+
 
 
 
@@ -792,32 +895,127 @@ public:
             return;
 
         Player& player = players.back();
-        if(inputState.key[Key::W])
-            player.pos += sf::Vector2f(0,-player.moveSpeed);
-        if(inputState.key[Key::A])
-            player.pos += sf::Vector2f(-player.moveSpeed,0);
-        if(inputState.key[Key::S])
-            player.pos += sf::Vector2f(0,player.moveSpeed);
-        if(inputState.key[Key::D])
-            player.pos += sf::Vector2f(player.moveSpeed,0);
 
-
-        player.rotationPoint = gvars::mousePos;
-
-        int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
-        int rotCheck = rotationDiff;
-        if(rotCheck < 0)
-            rotCheck = -rotCheck;
-
-        if(rotCheck < player.rotationSpeed)
-            player.rotation = math::angleBetweenVectors(player.pos,player.rotationPoint);
-        else
-        {
-            if(rotationDiff > 0)
-                player.rotation += player.rotationSpeed;
-            if(rotationDiff < 0)
-                player.rotation -= player.rotationSpeed;
+        { // Camera Lock
+            //gvars::currentx = player.pos.x;
+            //gvars::currenty = player.pos.y;
+            gvars::view1.setCenter(player.pos);
         }
+
+        { // Movement Code
+            bool movedLeft = false;
+            bool movedRight = false;
+            bool movedUp = false;
+            bool movedDown = false;
+
+            float xMovement = 0;
+            float yMovement = 0;
+
+            if(inputState.key[Key::W])
+            {
+                yMovement += -player.moveSpeed;
+                //player.pos += sf::Vector2f(0,-player.moveSpeed);
+                movedUp = true;
+            }
+
+            if(inputState.key[Key::A])
+            {
+                xMovement += -player.moveSpeed;
+                //player.pos += sf::Vector2f(-player.moveSpeed,0);
+                movedLeft = true;
+            }
+
+            if(inputState.key[Key::S])
+            {
+                yMovement += player.moveSpeed;
+                //player.pos += sf::Vector2f(0,player.moveSpeed);
+                movedDown = true;
+            }
+
+            if(inputState.key[Key::D])
+            {
+                xMovement += player.moveSpeed;
+                //player.pos += sf::Vector2f(player.moveSpeed,0);
+                movedRight = true;
+            }
+
+
+
+            player.stamina = std::min(player.stamina+1,player.getStaminaMax());
+
+            if(!player.isTired() && inputState.key[Key::LShift])
+            {
+                bool isRunning = false;
+
+                if(inputState.key[Key::W])
+                {
+                    yMovement += -player.moveSpeed*3;
+                    isRunning = true;
+                }
+
+                if(inputState.key[Key::A])
+                {
+                    xMovement += -player.moveSpeed*3;
+                    isRunning = true;
+                }
+
+                if(inputState.key[Key::S])
+                {
+                    yMovement += player.moveSpeed*3;
+                    isRunning = true;
+                }
+
+                if(inputState.key[Key::D])
+                {
+                    xMovement += player.moveSpeed*3;
+                    isRunning = true;
+                }
+
+                if(isRunning)
+                    player.stamina -= 2;
+
+            }
+
+
+            if(worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x+xMovement,player.pos.y) ))
+            {
+                player.pos.x += xMovement;
+                player.lastValidPos = player.pos;
+            }
+
+            if(worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x,player.pos.y+yMovement) ))
+            {
+                player.pos.y += yMovement;
+                player.lastValidPos = player.pos;
+            }
+
+
+
+        }
+
+
+
+
+        { // Rotation Code
+           player.rotationPoint = gvars::mousePos;
+
+            int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
+            int rotCheck = rotationDiff;
+            if(rotCheck < 0)
+                rotCheck = -rotCheck;
+
+            if(rotCheck < player.rotationSpeed)
+                player.rotation = math::angleBetweenVectors(player.pos,player.rotationPoint);
+            else
+            {
+                if(rotationDiff > 0)
+                    player.rotation += player.rotationSpeed;
+                if(rotationDiff < 0)
+                    player.rotation -= player.rotationSpeed;
+            }
+        }
+
+
 
 
 
@@ -828,6 +1026,15 @@ public:
 };
 PlayerManager playerManager;
 
+bool playerCamera()
+{
+    if(playerManager.players.empty())
+        return false;
+
+   gvars::view1.setCenter(playerManager.players.back().pos);
+
+   return true;
+}
 
 sf::Packet& operator <<(sf::Packet& packet, const Brain& brain)
 {
@@ -2659,6 +2866,9 @@ void generalFunctions()
         sf::sleep(sf::seconds(1));
 
 
+    if(inputState.key[Key::Y].time == 1)
+        worldManager.worlds.back().printWalkables();
+
     if(inputState.key[Key::Pause].time == 1)
     {
         if(network::client)
@@ -2681,7 +2891,7 @@ void generalFunctions()
         player.pos = gvars::mousePos;
         player.healthMax = 100;
         player.health = player.healthMax;
-        player.staminaMax = 100;
+        player.staminaMax = 1000;
         player.stamina = player.staminaMax;
 
         player.rotation = 0;
@@ -2798,14 +3008,17 @@ void drawWorld()
         if(wallSprite.getTexture() == nullptr)
         {
             wallSprite.setTexture(wallTex);
+            wallSprite.setOrigin(16,16);
         }
         if(floorSprite.getTexture() == nullptr)
         {
             floorSprite.setTexture(floorTex);
+            floorSprite.setOrigin(16,16);
         }
         if(weakfenceSprite.getTexture() == nullptr)
         {
             weakfenceSprite.setTexture(weakfenceTex);
+            weakfenceSprite.setOrigin(16,16);
         }
 
     }
@@ -2864,20 +3077,32 @@ void drawWorld()
 
 
         if(chunk.paths.north)
+        {
             shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512-512,20,sf::Color::Blue);
-        shapes.shapes.back().offscreenRender = true;
+            shapes.shapes.back().offscreenRender = true;
+        }
+
 
         if(chunk.paths.east)
+        {
             shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512+512,chunk.pos.y+512,20,sf::Color::Blue);
-        shapes.shapes.back().offscreenRender = true;
+            shapes.shapes.back().offscreenRender = true;
+        }
+
 
         if(chunk.paths.south)
+        {
             shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512+512,20,sf::Color::Blue);
-        shapes.shapes.back().offscreenRender = true;
+            shapes.shapes.back().offscreenRender = true;
+        }
+
 
         if(chunk.paths.west)
+        {
             shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512-512,chunk.pos.y+512,20,sf::Color::Blue);
-        shapes.shapes.back().offscreenRender = true;
+            shapes.shapes.back().offscreenRender = true;
+        }
+
 
 
         shapes.createText(chunk.pos.x+512,chunk.pos.y+512,50,sf::Color::White,std::to_string(chunkCount));
@@ -2916,6 +3141,18 @@ void drawPlayers()
         angelSprite.setPosition(player.pos);
         angelSprite.setRotation(player.rotation+90);
         window.draw(angelSprite);
+
+
+        std::string staminaString;
+        staminaString.append(std::to_string( (int) player.stamina) );
+        staminaString.append("/");
+        staminaString.append(std::to_string( (int) player.staminaMax));
+
+        if(player.isTired())
+            shapes.createText(player.pos.x,player.pos.y+25,10,sf::Color(100,100,100),staminaString);
+        else
+            shapes.createText(player.pos.x,player.pos.y+25,10,sf::Color::Yellow,staminaString);
+
     }
 
     // Fixing View
@@ -2926,6 +3163,9 @@ void renderGame()
 {
 
     drawWorld();
+
+    if(inputState.key[Key::E])
+        worldManager.drawWalkableTiles();
 
     drawPlayers();
 

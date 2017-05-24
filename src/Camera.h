@@ -8,5 +8,6 @@
 void cameraZoomIn();
 void cameraZoomOut();
 void cameraControls();
+void applyCamera();
 
 #endif // CAMERA_H_INCLUDED

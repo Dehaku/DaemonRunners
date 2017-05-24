@@ -361,6 +361,8 @@ int main()
         handleEvents();
         inputState.update();
         cameraControls();
+        if(!playerCamera())
+            applyCamera();
 
         if(inputState.key[Key::Return].time == 1 || inputState.key[Key::T].time == 1)
         {
