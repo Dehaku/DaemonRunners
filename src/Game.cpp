@@ -849,6 +849,133 @@ public:
 WorldManager worldManager;
 
 
+class Weapon
+{
+public:
+    std::string name;
+    int weaponID;
+
+    bool melee;
+    bool range;
+
+    float attackDamage;
+    float attackRange;
+    float attackSpeed;
+    float attackStun;
+    float attackRadius;
+
+    int magSize;
+    float reloadSpeed;
+
+    bool beam;
+
+    int arcAmount;
+    int bulletAmount;
+
+     enum RangeWeapons
+    {
+        NoRange,
+        HolyRays,
+        Shotgun,
+        AssaultRifle,
+        SniperRifle,
+        LightningArcs
+    };
+
+    enum MeleeWeapons
+    {
+        NoMelee,
+        Stake,
+        Sledgehammer,
+        Baton,
+        Knife,
+        HolyMace,
+        DivineArts
+    };
+
+    Weapon()
+    {
+        name = "Nothing";
+        weaponID = NoRange;
+        melee = false;
+        range = false;
+
+        attackDamage = 1;
+        attackRange = 1;
+        attackSpeed = 60;
+        attackStun = 10;
+        attackRadius = 1; // Should only be used for Melee;
+
+
+        magSize = 0;
+        reloadSpeed = 600;
+
+        beam = false;
+
+        arcAmount = 0;
+        bulletAmount = 1;
+    }
+
+};
+
+class WeaponManager
+{
+public:
+    std::list<Weapon> weapons;
+
+    WeaponManager()
+    {
+        Weapon weapon;
+        Weapon blankWeapon;
+
+        weapon.name = "Holy Rays";
+        {
+            weapon.weaponID = Weapon::HolyRays;
+            weapon.range = true;
+
+            weapon.attackDamage = 30;
+            weapon.attackRange = 320;
+            weapon.attackSpeed = 30;
+            weapon.attackStun = 30;
+
+
+            weapon.magSize = 10;
+            weapon.reloadSpeed = 180;
+
+            weapon.beam = true;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Stake";
+        {
+            weapon.weaponID = Weapon::Stake;
+            weapon.melee = true;
+
+            weapon.attackDamage = 30;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 15;
+            weapon.attackStun = 20;
+
+            weapon.attackRadius = 1;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapon.beam = true;
+
+            weapons.push_back(weapon);
+        }
+
+
+
+
+    }
+
+};
+WeaponManager weaponManager;
+
 class Trait
 {
 public:
@@ -954,26 +1081,6 @@ public:
     unsigned int rangeWeapon;
     unsigned int meleeWeapon;
 
-    enum RangeWeapons
-    {
-        NoRange,
-        HolyRays,
-        Shotgun,
-        AssaultRifle,
-        SniperRifle,
-        LightningArcs
-    };
-
-    enum MeleeWeapons
-    {
-        NoMelee,
-        Stake,
-        Sledgehammer,
-        Baton,
-        Knife,
-        HolyMace,
-        DivineArts
-    };
 
     CharacterClass()
     {
@@ -988,8 +1095,8 @@ public:
         focusable = false;
         focusStacks = 0;
 
-        rangeWeapon = NoRange;
-        meleeWeapon = NoMelee;
+        rangeWeapon = Weapon::NoRange;
+        meleeWeapon = Weapon::NoMelee;
     }
 
 };
@@ -1007,8 +1114,8 @@ public:
         classy.description = "Making demons wholly holeyer by his holy self since genesis.";
         classy.abilityDescription = "Revive(4x Revival Speed)";
         classy.reviveSpeedMultipler = 4;
-        classy.rangeWeapon = classy.HolyRays;
-        classy.meleeWeapon = classy.Stake;
+        classy.rangeWeapon = Weapon::HolyRays;
+        classy.meleeWeapon = Weapon::Stake;
         classes.push_back(classy);
         classy.reviveSpeedMultipler = 1;
 
@@ -1016,8 +1123,8 @@ public:
         classy.description = "Raging against the Demonic Machine.";
         classy.abilityDescription = "Deconstruction(Deals double base damage to constructs and buildings)";
         classy.constructDamageMultipler = 2;
-        classy.rangeWeapon = classy.Shotgun;
-        classy.meleeWeapon = classy.Sledgehammer;
+        classy.rangeWeapon = Weapon::Shotgun;
+        classy.meleeWeapon = Weapon::Sledgehammer;
         classes.push_back(classy);
         classy.constructDamageMultipler = 1;
 
@@ -1025,8 +1132,8 @@ public:
         classy.description = "Even demons have to follow the holy law.";
         classy.abilityDescription = "Unstoppable(When health reaches 0, You have 10 seconds before you fall. Can be healed during this time.)";
         classy.unstoppable = true;
-        classy.rangeWeapon = classy.AssaultRifle;
-        classy.meleeWeapon = classy.Baton;
+        classy.rangeWeapon = Weapon::AssaultRifle;
+        classy.meleeWeapon = Weapon::Baton;
         classes.push_back(classy);
         classy.unstoppable = false;
 
@@ -1034,8 +1141,8 @@ public:
         classy.description = "It's never a long shot when he's around.";
         classy.abilityDescription = "Piercing Rounds(Bullets go through unlimited enemies)";
         classy.bulletsPierce = true;
-        classy.rangeWeapon = classy.SniperRifle;
-        classy.meleeWeapon = classy.Knife;
+        classy.rangeWeapon = Weapon::SniperRifle;
+        classy.meleeWeapon = Weapon::Knife;
         classes.push_back(classy);
         classy.bulletsPierce = false;
 
@@ -1043,8 +1150,8 @@ public:
         classy.description = "Good has never been better.";
         classy.abilityDescription = "Holy Smite(Deals +100% damage to the forces of evil. Does not apply to constructs or buildings)";
         classy.evilDamageMultipler = 2;
-        classy.rangeWeapon = classy.LightningArcs;
-        classy.meleeWeapon = classy.HolyMace;
+        classy.rangeWeapon = Weapon::LightningArcs;
+        classy.meleeWeapon = Weapon::HolyMace;
         classes.push_back(classy);
         classy.evilDamageMultipler = 1;
 
@@ -1052,8 +1159,8 @@ public:
         classy.description = "Balance has been achieved.";
         classy.abilityDescription = "Moment of Focus(Every enemy killed grants +5 stacks of Focus, Each stack of Focus grants +1% damage, damage resistence, and attack speed; 1 stack decays per second)";
         classy.focusable = true;
-        classy.rangeWeapon = classy.NoRange;
-        classy.meleeWeapon = classy.DivineArts;
+        classy.rangeWeapon = Weapon::NoRange;
+        classy.meleeWeapon = Weapon::DivineArts;
         classes.push_back(classy);
         classy.focusable = false;
 
