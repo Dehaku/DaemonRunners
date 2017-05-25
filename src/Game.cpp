@@ -875,19 +875,14 @@ public:
     int arcAmount;
     int bulletAmount;
 
-     enum RangeWeapons
+    enum WeaponsIDs
     {
-        NoRange,
+        Nothing,
         HolyRays,
         Shotgun,
         AssaultRifle,
         SniperRifle,
-        LightningArcs
-    };
-
-    enum MeleeWeapons
-    {
-        NoMelee,
+        LightningArcs,
         Stake,
         Sledgehammer,
         Baton,
@@ -899,11 +894,11 @@ public:
     Weapon()
     {
         name = "Nothing";
-        weaponID = NoRange;
+        weaponID = Nothing;
         melee = false;
         range = false;
 
-        attackDamage = 1;
+        attackDamage = 0;
         attackRange = 1;
         attackSpeed = 60;
         attackStun = 10;
@@ -926,10 +921,44 @@ class WeaponManager
 public:
     std::list<Weapon> weapons;
 
+    Weapon getWeapon(int weaponID)
+    {
+        for(auto &weapon : weapons)
+            if(weapon.weaponID == weaponID)
+                return weapon;
+
+        for(auto &weapon : weapons)
+            return weapon;
+    }
+
     WeaponManager()
     {
         Weapon weapon;
         Weapon blankWeapon;
+
+        weapon.name = "Nothing";
+        {
+            weapon.weaponID = Weapon::Nothing;
+            weapon.melee = false;
+            weapon.range = false;
+
+            weapon.attackDamage = 0;
+            weapon.attackRange = 1;
+            weapon.attackSpeed = 60;
+            weapon.attackStun = 10;
+            weapon.attackRadius = 1; // Bullet Spread/Melee Swing Arc
+
+
+            weapon.magSize = 0;
+            weapon.reloadSpeed = 600;
+
+            weapon.beam = false;
+
+            weapon.arcAmount = 0;
+            weapon.bulletAmount = 1;
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
 
         weapon.name = "Holy Rays";
         {
@@ -1276,8 +1305,8 @@ public:
         focusable = false;
         focusStacks = 0;
 
-        rangeWeapon = Weapon::NoRange;
-        meleeWeapon = Weapon::NoMelee;
+        rangeWeapon = Weapon::Nothing;
+        meleeWeapon = Weapon::Nothing;
     }
 
 };
@@ -1320,7 +1349,7 @@ public:
 
         classy.name = "Sniper";
         classy.description = "It's never a long shot when he's around.";
-        classy.abilityDescription = "Piercing Rounds(Bullets go through unlimited enemies)";
+        classy.abilityDescription = "Piercing Rounds!";
         classy.bulletsPierce = true;
         classy.rangeWeapon = Weapon::SniperRifle;
         classy.meleeWeapon = Weapon::Knife;
@@ -1338,9 +1367,9 @@ public:
 
         classy.name = "Monk";
         classy.description = "Balance has been achieved.";
-        classy.abilityDescription = "Moment of Focus(Every enemy killed grants +5 stacks of Focus, Each stack of Focus grants +1% damage, damage resistence, and attack speed; 1 stack decays per second)";
+        classy.abilityDescription = "Moment of Focus(Every enemy killed grants +5 stacks of Focus)";
         classy.focusable = true;
-        classy.rangeWeapon = Weapon::NoRange;
+        classy.rangeWeapon = Weapon::Nothing;
         classy.meleeWeapon = Weapon::DivineArts;
         classes.push_back(classy);
         classy.focusable = false;
@@ -2498,6 +2527,7 @@ void runnersMenu()
 
     static Trait* selectedTrait = nullptr;
     static bool needsClass = false;
+    static int viewWeapon = -1;
 
     if(selectedTrait != nullptr)
     {
@@ -2532,15 +2562,20 @@ void runnersMenu()
 
     }
 
+
+    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+45,15,sf::Color::White,"Range: " + weaponManager.getWeapon(player.characterClass.rangeWeapon).name, &gvars::hudView);
+    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+60,15,sf::Color::White,"Melee: " + weaponManager.getWeapon(player.characterClass.meleeWeapon).name, &gvars::hudView);
+
+
     int traitOffset = 0;
     for(auto &trait : player.traits)
     {
         if(trait.name == "Locked")
-            shapes.createText(HUDPos.x+60,HUDPos.y+45+(20*traitOffset),15,sf::Color(100,100,100),"Trait: " + trait.name, &gvars::hudView);
+            shapes.createText(HUDPos.x+60,HUDPos.y+75+(20*traitOffset),15,sf::Color(100,100,100),"Trait: " + trait.name, &gvars::hudView);
         else
-            shapes.createText(HUDPos.x+60,HUDPos.y+45+(20*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
+            shapes.createText(HUDPos.x+60,HUDPos.y+75+(20*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
 
-        sf::Vector2f buttPos(HUDPos.x+50+xMod,HUDPos.y+55+(20*traitOffset));
+        sf::Vector2f buttPos(HUDPos.x+50+xMod,HUDPos.y+85+(20*traitOffset));
         int traitButton = shapes.createImageButton(buttPos,*arrowButton,"",0, &gvars::hudView);
 
         if(shapes.shapeHovered(traitButton))
@@ -2584,13 +2619,16 @@ void runnersMenu()
             }
 
             traitOffset++;
-            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),12,sf::Color(200,200,200),classy.description, &gvars::hudView);
-            traitOffset++;
-            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),12,sf::Color(200,200,200),classy.abilityDescription, &gvars::hudView);
-            traitOffset++;
-            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),12,sf::Color(200,200,200),"Weapons: ??? / ???", &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset++),12,sf::Color(200,200,200),classy.description, &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset++),12,sf::Color(200,200,200),classy.abilityDescription, &gvars::hudView);
 
-            traitOffset++;
+            std::string weaponNames = "Weapons: ";
+            weaponNames.append(weaponManager.getWeapon(classy.rangeWeapon).name);
+            weaponNames.append(" / ");
+            weaponNames.append(weaponManager.getWeapon(classy.meleeWeapon).name);
+
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset++),12,sf::Color(200,200,200),weaponNames, &gvars::hudView);
+
         }
     }
     else if(selectedTrait != nullptr)
@@ -2641,10 +2679,30 @@ void runnersMenu()
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Cyan,"* Energy Shield Health: " + std::to_string(player.getEnergyShieldMax()), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Cyan,"* Energy Shield Reduction: " + std::to_string(player.getEnergyShieldArmorReduction()), &gvars::hudView);
         yOSet += 2;
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Range Damage: " + std::to_string(weaponManager.getWeapon(player.characterClass.rangeWeapon).attackDamage), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Melee Damage: " + std::to_string(weaponManager.getWeapon(player.characterClass.meleeWeapon).attackDamage), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Construct Multiplier: " + std::to_string(player.getConstructDamageMultiplier()), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Evil Damage Multiplier: " + std::to_string(player.getEvilDamageMultiplier()), &gvars::hudView);
+        yOSet++;
+        {
+            if(player.characterClass.unstoppable)
+            {
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Red,"* Unstoppable! ", &gvars::hudView);
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color(200,200,200),"* When at 0 health, Continues acting for 10 seconds before falling. Can be healed. ", &gvars::hudView);
+            }
+            if(player.characterClass.bulletsPierce)
+            {
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Red,"* Piercing Rounds! ", &gvars::hudView);
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color(200,200,200),"* Bullets have unlimited penetrating power. ", &gvars::hudView);
+            }
+            if(player.characterClass.focusable)
+            {
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Red,"* Moment of Focus! ", &gvars::hudView);
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color(200,200,200),"* Per Focus Stack: +1% Damage, Resistence, and Attack Speed. 1 stack decays per second. ", &gvars::hudView);
+            }
+        }
+
+
         yOSet++;
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Revive Multiplier: " + std::to_string(player.getReviveMultiplier()), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Healing Bullet Multiplier: " + std::to_string(player.getHealBulletMultiplier()), &gvars::hudView);
@@ -2652,6 +2710,52 @@ void runnersMenu()
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
+
+
+
+        // Weapon Display Time!
+        yOSet = 0;
+        xOffset += 436;
+        Weapon rangeWeapon = weaponManager.getWeapon(player.characterClass.rangeWeapon);
+        Weapon meleeWeapon = weaponManager.getWeapon(player.characterClass.meleeWeapon);
+
+        if(rangeWeapon.weaponID != Weapon::Nothing)
+        {
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"*Range: " + rangeWeapon.name + "*", &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Damage: " + std::to_string(rangeWeapon.attackDamage), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Range: " + std::to_string(rangeWeapon.attackRange), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Delay: " + std::to_string(rangeWeapon.attackSpeed), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Stun: " + std::to_string(rangeWeapon.attackStun), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Spread: " + std::to_string(rangeWeapon.attackRadius), &gvars::hudView);
+            yOSet++;
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Capacity: " + std::to_string(rangeWeapon.magSize), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Restock Delay: " + std::to_string(rangeWeapon.reloadSpeed), &gvars::hudView);
+            yOSet++;
+            if(rangeWeapon.bulletAmount > 1)
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Red,"* Projectiles: " + std::to_string(rangeWeapon.bulletAmount), &gvars::hudView);
+            if(rangeWeapon.beam)
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Red,"* Beam!", &gvars::hudView);
+            if(rangeWeapon.arcAmount > 0)
+                shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Red,"* Arcs Jumps: " + std::to_string(rangeWeapon.arcAmount), &gvars::hudView);
+            yOSet++;
+        }
+
+        if(meleeWeapon.weaponID != Weapon::Nothing)
+        {
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"*Melee: " + meleeWeapon.name + "*", &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Damage: " + std::to_string(meleeWeapon.attackDamage), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Range: " + std::to_string(meleeWeapon.attackRange), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Delay: " + std::to_string(meleeWeapon.attackSpeed), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Attack Stun: " + std::to_string(meleeWeapon.attackStun), &gvars::hudView);
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Swing Arc: " + std::to_string(meleeWeapon.attackRadius), &gvars::hudView);
+            yOSet++;
+
+        }
+
+
+
+
+
 
     }
 
