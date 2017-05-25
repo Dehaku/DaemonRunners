@@ -917,9 +917,9 @@ public:
         baseTraits.push_back(trait);
 
         trait.name = "Energy Shield Hardening";
-        trait.description = "(4) Allows Armor trait to apply to Energy Shield, Doubles the effect of Armor for the shield";
+        trait.description = "(1) Allows Armor trait to apply to Energy Shield, Doubles the effect of Armor for the shield (80% Cap)";
         trait.traitID = Trait::EnergyShieldHardening;
-        trait.stackable = 4;
+        trait.stackable = 1;
         baseTraits.push_back(trait);
 
 
@@ -1101,7 +1101,63 @@ public:
 
     float health;
     float healthMax;
-    float getHealthmax()
+    float armorReduction;
+    float getArmorReduction()
+    {
+        float baseMulti = 1;
+        float Multi = 0;
+
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::Armor)
+                Multi += 0.2;
+        }
+
+        Multi = std::min(Multi,0.8f);
+
+        return baseMulti*Multi;
+    }
+    float getEnergyShieldMax()
+    {
+        bool energyShield = false;
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::EnergyShield)
+                energyShield = true;
+        }
+
+        return getHealthMax()*energyShield; // Multiplying by a bool, aww ye.
+    }
+
+    float energyShieldHealth;
+
+    float getEnergyShieldArmorReduction()
+    {
+        float baseMulti = 1;
+        float Multi = 0;
+        bool energyShieldHardening = false;
+
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::EnergyShieldHardening)
+                energyShieldHardening = true;
+            if(trait.traitID == Trait::Armor)
+                Multi += 0.4;
+        }
+
+
+        if(!energyShieldHardening)
+            Multi = 0;
+        else
+            Multi = std::min(Multi,0.8f);
+
+        return baseMulti*Multi;
+    }
+
+
+
+
+    float getHealthMax()
     {
         return healthMax;
     }
@@ -2284,26 +2340,30 @@ void runnersMenu()
     else
     {
         int xOffset = 345;
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15,15,sf::Color::White,"*Stats* ", &gvars::hudView);
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.getMoveSpeed()), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+45,15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+60,15,sf::Color::White,"* Stamina Regen: " + std::to_string(player.getStaminaRegen()), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+75,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
+        int yOSet = 1;
 
 
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+90,15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+105,15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+120,15,sf::Color::White,"* Construct Multiplier: " + std::to_string(player.getConstructDamageMultiplier()), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+135,15,sf::Color::White,"* Evil Damage Multiplier: " + std::to_string(player.getEvilDamageMultiplier()), &gvars::hudView);
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+165,15,sf::Color::White,"* Revive Multiplier: " + std::to_string(player.getReviveMultiplier()), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+180,15,sf::Color::White,"* Healing Bullet Multiplier: " + std::to_string(player.getHealBulletMultiplier()), &gvars::hudView);
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+300,15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+315,15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+330,15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"*Stats* ", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Move Speed: " + std::to_string(player.getMoveSpeed()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Stamina Regen: " + std::to_string(player.getStaminaRegen()), &gvars::hudView);
+        yOSet++;
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Max Health: " + std::to_string((int) player.getHealthMax()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Armor Reduction: " + std::to_string(player.getArmorReduction()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Cyan,"* Energy Shield Health: " + std::to_string(player.getEnergyShieldMax()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Cyan,"* Energy Shield Reduction: " + std::to_string(player.getEnergyShieldArmorReduction()), &gvars::hudView);
+        yOSet += 2;
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Construct Multiplier: " + std::to_string(player.getConstructDamageMultiplier()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Evil Damage Multiplier: " + std::to_string(player.getEvilDamageMultiplier()), &gvars::hudView);
+        yOSet++;
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Revive Multiplier: " + std::to_string(player.getReviveMultiplier()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Healing Bullet Multiplier: " + std::to_string(player.getHealBulletMultiplier()), &gvars::hudView);
+        yOSet += 3;
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
 
     }
 
