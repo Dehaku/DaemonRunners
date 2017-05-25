@@ -853,6 +853,7 @@ class Trait
 {
 public:
     std::string name;
+    std::string description;
     int traitID;
     int stackable;
 
@@ -869,6 +870,135 @@ public:
         Sprinter
     };
 
+};
+
+class TraitManager
+{
+public:
+    std::list<Trait> baseTraits;
+
+    TraitManager()
+    {
+        Trait trait;
+        trait.name = "Empty";
+        trait.description = "Empty Slot";
+        trait.traitID = Trait::Empty;
+        trait.stackable = 99;
+        baseTraits.push_back(trait);
+
+        trait.name = "Sprinter";
+        trait.description = "(4) 25% Faster move speed, and 50% faster stamina regen";
+        trait.traitID = Trait::Sprinter;
+        trait.stackable = 4;
+        baseTraits.push_back(trait);
+
+        trait.name = "Quick Renewal";
+        trait.description = "(4) Reload and Recharge spells in half the time";
+        trait.traitID = Trait::QuickRenewal;
+        trait.stackable = 4;
+        baseTraits.push_back(trait);
+
+        trait.name = "Healing Wounds";
+        trait.description = "(4) Attacks now heal allies for 20% of the damage";
+        trait.traitID = Trait::HealingWounds;
+        trait.stackable = 4;
+        baseTraits.push_back(trait);
+
+        trait.name = "Armor";
+        trait.description = "(4) Take 20% less damage from all sources, Does not apply to energy shield";
+        trait.traitID = Trait::Armor;
+        trait.stackable = 4;
+        baseTraits.push_back(trait);
+
+        trait.name = "Energy Shield";
+        trait.description = "(1) Gain a damage sponge that regenerates after not being hit for awhile";
+        trait.traitID = Trait::EnergyShield;
+        trait.stackable = 1;
+        baseTraits.push_back(trait);
+
+        trait.name = "Energy Shield Hardening";
+        trait.description = "(4) Allows Armor trait to apply to Energy Shield, Doubles the effect of Armor for the shield";
+        trait.traitID = Trait::EnergyShieldHardening;
+        trait.stackable = 4;
+        baseTraits.push_back(trait);
+
+
+        trait.name = "Demolition Expert";
+        trait.description = "(4) 100% damage bonus against constructs and buildings, as well as core hearts";
+        trait.traitID = Trait::DemolitionsExpert;
+        trait.stackable = 4;
+        baseTraits.push_back(trait);
+
+
+
+
+    }
+};
+TraitManager traitManager;
+
+class CharacterClass
+{
+public:
+    std::string name;
+    float reviveSpeedMultipler; // Priest
+    float constructDamageMultipler; // Engineer
+    bool unstoppable; // Enforcer
+    sf::Clock unstoppableTime; // Enforcer
+    bool bulletsPierce; // Sniper
+    float evilDamageMultipler; // Angel
+    bool focusable; // Monk
+    unsigned int focusStacks; // Monk
+
+    unsigned int rangeWeapon;
+    unsigned int meleeWeapon;
+
+    enum RangeWeapons
+    {
+        NoRange,
+        HolyRays,
+        Shotgun,
+        AssaultRifle,
+        SniperRifle,
+        LightningArcs
+    };
+
+    enum MeleeWeapons
+    {
+        NoMelee,
+        Stake,
+        Sledgehammer,
+        Baton,
+        Knife,
+        HolyMace,
+        DivineArts
+    };
+
+    CharacterClass()
+    {
+        name = "None";
+        reviveSpeedMultipler = 1;
+        constructDamageMultipler = 1;
+        unstoppable = false; // Quite stoppable!
+        bulletsPierce = false;
+        evilDamageMultipler = 1;
+        focusable = false;
+        focusStacks = 0;
+
+        rangeWeapon = NoRange;
+        meleeWeapon = NoMelee;
+    }
+
+};
+
+class CharacterClassManager
+{
+public:
+    std::list<CharacterClass> classes;
+
+    CharacterClassManager()
+    {
+
+    }
 };
 
 class Player
@@ -911,9 +1041,22 @@ public:
 
     float health;
     float healthMax;
+    float getHealthmax()
+    {
+        return healthMax;
+    }
     float moveSpeed;
+    float getMoveSpeed()
+    {
+        return moveSpeed;
+    }
     float stamina;
     float staminaMax;
+    float staminaRegen;
+    float getStaminaRegen()
+    {
+        return staminaRegen;
+    }
     float getStaminaMax()
     {
         return staminaMax;
@@ -947,6 +1090,8 @@ public:
 
     Player()
     {
+        staminaRegen = 1;
+
         kills = 0;
         deaths = 0;
         reviveCount = 0;
@@ -1870,6 +2015,13 @@ void runnersMenu()
 
     Player &player = playerManager.players.back();
 
+    static Trait* selectedTrait = nullptr;
+
+    if(selectedTrait != nullptr)
+    {
+        std::cout << "Selected Trait: " <<  selectedTrait->name << std::endl;
+    }
+
 
          static int xMod = 0;
             static int yMod = 0;
@@ -1886,32 +2038,88 @@ void runnersMenu()
 
     sf::Vector2f HUDPos(-141, 254);
 
-    shapes.createText(HUDPos.x+15+xMod,HUDPos.y+15+yMod,15,sf::Color::White,"Name: " + player.name, &gvars::hudView);
-    shapes.createText(HUDPos.x+15,HUDPos.y+30,15,sf::Color::White,"Class: " + player.classType, &gvars::hudView);
+    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+15+yMod,15,sf::Color::White,"Name: " + player.name, &gvars::hudView);
+    shapes.createText(HUDPos.x+60,HUDPos.y+30,15,sf::Color::White,"Class: " + player.classType, &gvars::hudView);
 
 
     int traitOffset = 0;
     for(auto &trait : player.traits)
     {
-        shapes.createText(HUDPos.x+15,HUDPos.y+45+(15*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
+        if(trait.name == "Locked")
+            shapes.createText(HUDPos.x+60,HUDPos.y+45+(20*traitOffset),15,sf::Color(100,100,100),"Trait: " + trait.name, &gvars::hudView);
+        else
+            shapes.createText(HUDPos.x+60,HUDPos.y+45+(20*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
+
+        sf::Vector2f buttPos(HUDPos.x+50+xMod,HUDPos.y+55+(20*traitOffset));
+        int traitButton = shapes.createImageButton(buttPos,*arrowButton,"",0, &gvars::hudView);
+
+        if(shapes.shapeHovered(traitButton))
+        {
+
+            shapes.createSquare(gvars::mousePos.x-5,gvars::mousePos.y-10,gvars::mousePos.x+150,gvars::mousePos.y+10,sf::Color::Black);
+            shapes.createText(gvars::mousePos.x,gvars::mousePos.y-10,10,sf::Color::Yellow,"    Choose new trait!");
+
+            if(inputState.lmbTime == 1)
+            {
+                selectedTrait = &trait;
+            }
+        }
+
+
         traitOffset++;
     }
 
-    shapes.createText(HUDPos.x+200,HUDPos.y+15,15,sf::Color::White,"*Stats* ", &gvars::hudView);
+    if(selectedTrait == nullptr)
+    {
+        int xOffset = 345;
 
-    shapes.createText(HUDPos.x+200,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.moveSpeed), &gvars::hudView);
-    shapes.createText(HUDPos.x+200,HUDPos.y+45,15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
-    shapes.createText(HUDPos.x+200,HUDPos.y+60,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15,15,sf::Color::White,"*Stats* ", &gvars::hudView);
+
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.moveSpeed), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+45,15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+60,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
 
 
-    shapes.createText(HUDPos.x+200,HUDPos.y+90,15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
-    shapes.createText(HUDPos.x+200,HUDPos.y+105,15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+90,15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+105,15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
 
-    shapes.createText(HUDPos.x+200,HUDPos.y+300,15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
-    shapes.createText(HUDPos.x+200,HUDPos.y+315,15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
-    shapes.createText(HUDPos.x+200,HUDPos.y+330,15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
-    //player.
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+300,15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+315,15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+330,15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
 
+    }
+    else
+    {
+        traitOffset = 0;
+        int xOffset = 345;
+
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15+(20*traitOffset),15,sf::Color(100,100,100),"Traits, (Stack Count) ", &gvars::hudView);
+
+        for(auto &trait : traitManager.baseTraits)
+        {
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
+
+
+            sf::Vector2f buttPos(HUDPos.x+xOffset-10,HUDPos.y+40+(20*traitOffset));
+            int traitButton = shapes.createImageButton(buttPos,*arrowButton,"",0, &gvars::hudView);
+
+            if(shapes.shapeHovered(traitButton))
+            {
+                if(inputState.lmbTime == 1)
+                {
+                    *selectedTrait = trait;
+                    selectedTrait = nullptr;
+                }
+            }
+
+            traitOffset++;
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),12,sf::Color(200,200,200),trait.description, &gvars::hudView);
+
+
+
+            traitOffset++;
+        }
+    }
 
 
 

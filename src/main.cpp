@@ -21,7 +21,7 @@
 #include "Camera.h"
 #include "SaveLoad.h"
 
-sf::RenderWindow window(sf::VideoMode(960, 720), randomWindowName());
+sf::RenderWindow window(sf::VideoMode(1280, 720), randomWindowName());
 
 class GameInfo
 {
