@@ -865,7 +865,10 @@ public:
     float attackRadius;
 
     int magSize;
+    int magCurrent;
+
     float reloadSpeed;
+    float reloadSpeedTimer;
 
     bool beam;
 
@@ -904,7 +907,7 @@ public:
         attackRange = 1;
         attackSpeed = 60;
         attackStun = 10;
-        attackRadius = 1; // Should only be used for Melee;
+        attackRadius = 1; // Bullet Spread/Melee Swing Arc
 
 
         magSize = 0;
@@ -938,6 +941,8 @@ public:
             weapon.attackSpeed = 30;
             weapon.attackStun = 30;
 
+            weapon.attackRadius = 1;
+
 
             weapon.magSize = 10;
             weapon.reloadSpeed = 180;
@@ -963,11 +968,187 @@ public:
             weapon.magSize = 1;
             weapon.reloadSpeed = 0;
 
-            weapon.beam = true;
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Shotgun";
+        {
+            weapon.weaponID = Weapon::Shotgun;
+            weapon.range = true;
+
+            weapon.attackDamage = 10;
+            weapon.attackRange = 160;
+            weapon.attackSpeed = 30;
+            weapon.attackStun = 5;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 8;
+            weapon.reloadSpeed = 300;
+
+            weapon.bulletAmount = 10;
 
             weapons.push_back(weapon);
         }
+        weapon = blankWeapon;
 
+        weapon.name = "Sledgehammer";
+        {
+            weapon.weaponID = Weapon::Sledgehammer;
+            weapon.melee = true;
+
+            weapon.attackDamage = 50;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 30;
+            weapon.attackStun = 30;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Assault Rifle";
+        {
+            weapon.weaponID = Weapon::AssaultRifle;
+            weapon.range = true;
+
+            weapon.attackDamage = 20;
+            weapon.attackRange = 720;
+            weapon.attackSpeed = 10;
+            weapon.attackStun = 5;
+
+            weapon.attackRadius = 15;
+
+            weapon.magSize = 30;
+            weapon.reloadSpeed = 160;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Baton";
+        {
+            weapon.weaponID = Weapon::Baton;
+            weapon.melee = true;
+
+            weapon.attackDamage = 10;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 15;
+            weapon.attackStun = 20;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Sniper Rifle";
+        {
+            weapon.weaponID = Weapon::SniperRifle;
+            weapon.range = true;
+
+            weapon.attackDamage = 100;
+            weapon.attackRange = 60000;
+            weapon.attackSpeed = 45;
+            weapon.attackStun = 60;
+
+            weapon.attackRadius = 0;
+
+            weapon.magSize = 10;
+            weapon.reloadSpeed = 300;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Knife";
+        {
+            weapon.weaponID = Weapon::Knife;
+            weapon.melee = true;
+
+            weapon.attackDamage = 50;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 20;
+            weapon.attackStun = 5;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Lightning Arcs";
+        {
+            weapon.weaponID = Weapon::LightningArcs;
+            weapon.range = true;
+
+            weapon.attackDamage = 75;
+            weapon.attackRange = 160;
+            weapon.attackSpeed = 30;
+            weapon.attackStun = 30;
+
+            weapon.attackRadius = 15;
+
+            weapon.beam = true;
+            weapon.arcAmount = 1;
+
+            weapon.magSize = 10;
+            weapon.reloadSpeed = 300;
+
+            weapon.bulletAmount = 2;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Holy Mace";
+        {
+            weapon.weaponID = Weapon::HolyMace;
+            weapon.melee = true;
+
+            weapon.attackDamage = 75;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 60;
+            weapon.attackStun = 60;
+
+            weapon.attackRadius = 90;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Divine Arts";
+        {
+            weapon.weaponID = Weapon::DivineArts;
+            weapon.melee = true;
+
+            weapon.attackDamage = 20;
+            weapon.attackRange = 64;
+            weapon.attackSpeed = 20;
+            weapon.attackStun = 30;
+
+            weapon.attackRadius = 270;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
 
 
 
