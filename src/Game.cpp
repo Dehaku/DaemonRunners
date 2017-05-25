@@ -1059,6 +1059,7 @@ public:
 
     }
 };
+CharacterClassManager characterClassManager;
 
 class Player
 {
@@ -1068,7 +1069,7 @@ public:
     sf::Vector2f pos;
     sf::Vector2f lastValidPos;
 
-    std::string classType;
+    CharacterClass characterClass;
 
     std::list<Trait> traits;
     void genBaseTraits()
@@ -2075,6 +2076,7 @@ void runnersMenu()
     Player &player = playerManager.players.back();
 
     static Trait* selectedTrait = nullptr;
+    static bool needsClass = false;
 
     if(selectedTrait != nullptr)
     {
@@ -2098,8 +2100,16 @@ void runnersMenu()
     sf::Vector2f HUDPos(-141, 254);
 
     shapes.createText(HUDPos.x+60+xMod,HUDPos.y+15+yMod,15,sf::Color::White,"Name: " + player.name, &gvars::hudView);
-    shapes.createText(HUDPos.x+60,HUDPos.y+30,15,sf::Color::White,"Class: " + player.classType, &gvars::hudView);
+    shapes.createText(HUDPos.x+60,HUDPos.y+30,15,sf::Color::White,"Class: " + player.characterClass.name, &gvars::hudView);
+    int classButton = shapes.createImageButton(sf::Vector2f(HUDPos.x+60-10,HUDPos.y+30+10),*arrowButton,"",0, &gvars::hudView);
+    if(shapes.shapeHovered(classButton))
+    {
+        shapes.createSquare(gvars::mousePos.x-5,gvars::mousePos.y-10,gvars::mousePos.x+150,gvars::mousePos.y+10,sf::Color::Black);
+        shapes.createText(gvars::mousePos.x,gvars::mousePos.y-10,10,sf::Color::Yellow,"    Choose your class!");
+        if(inputState.lmbTime == 1)
+            needsClass = true;
 
+    }
 
     int traitOffset = 0;
     for(auto &trait : player.traits)
@@ -2128,31 +2138,46 @@ void runnersMenu()
         traitOffset++;
     }
 
-    if(selectedTrait == nullptr)
-    {
-        int xOffset = 345;
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15,15,sf::Color::White,"*Stats* ", &gvars::hudView);
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.moveSpeed), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+45,15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+60,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
-
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+90,15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+105,15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
-
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+300,15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+315,15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+330,15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
-
-    }
-    else
+    if(needsClass)
     {
         traitOffset = 0;
         int xOffset = 345;
 
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15+(20*traitOffset),15,sf::Color(100,100,100),"Traits, (Stack Count) ", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15+(20*traitOffset),15,sf::Color(100,100,100),"Classes", &gvars::hudView);
+
+        for(auto &classy : characterClassManager.classes)
+        {
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),15,sf::Color::White,classy.name, &gvars::hudView);
+
+
+            sf::Vector2f buttPos(HUDPos.x+xOffset-10,HUDPos.y+40+(20*traitOffset));
+            int chooseClassButton = shapes.createImageButton(buttPos,*arrowButton,"",0, &gvars::hudView);
+
+            if(shapes.shapeHovered(chooseClassButton))
+            {
+                if(inputState.lmbTime == 1)
+                {
+                    needsClass = false;
+                    player.characterClass = classy;
+                }
+            }
+
+            traitOffset++;
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),12,sf::Color(200,200,200),classy.description, &gvars::hudView);
+            traitOffset++;
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),12,sf::Color(200,200,200),classy.abilityDescription, &gvars::hudView);
+            traitOffset++;
+            shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),12,sf::Color(200,200,200),"Weapons: ??? / ???", &gvars::hudView);
+
+            traitOffset++;
+        }
+    }
+    else if(selectedTrait != nullptr)
+    {
+        traitOffset = 0;
+        int xOffset = 345;
+
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15+(20*traitOffset),15,sf::Color(200,200,200),"Traits, (Stack Count) ", &gvars::hudView);
 
         for(auto &trait : traitManager.baseTraits)
         {
@@ -2179,7 +2204,25 @@ void runnersMenu()
             traitOffset++;
         }
     }
+    else
+    {
+        int xOffset = 345;
 
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+15,15,sf::Color::White,"*Stats* ", &gvars::hudView);
+
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.moveSpeed), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+45,15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+60,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
+
+
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+90,15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+105,15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
+
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+300,15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+315,15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+330,15,sf::Color::White,"* Missions Win/Lost: " + std::to_string(player.missionsComplete) + "/" + std::to_string(player.missionsFailed), &gvars::hudView);
+
+    }
 
 
     drawChat();
