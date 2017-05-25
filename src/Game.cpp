@@ -940,6 +940,8 @@ class CharacterClass
 {
 public:
     std::string name;
+    std::string description;
+    std::string abilityDescription;
     float reviveSpeedMultipler; // Priest
     float constructDamageMultipler; // Engineer
     bool unstoppable; // Enforcer
@@ -975,7 +977,9 @@ public:
 
     CharacterClass()
     {
-        name = "None";
+        name = "No One";
+        description = "Unknown";
+        abilityDescription = "watt.";
         reviveSpeedMultipler = 1;
         constructDamageMultipler = 1;
         unstoppable = false; // Quite stoppable!
@@ -997,6 +1001,61 @@ public:
 
     CharacterClassManager()
     {
+        CharacterClass classy;
+
+        classy.name = "Priest";
+        classy.description = "Making demons wholly holeyer by his holy self since genesis.";
+        classy.abilityDescription = "Revive(4x Revival Speed)";
+        classy.reviveSpeedMultipler = 4;
+        classy.rangeWeapon = classy.HolyRays;
+        classy.meleeWeapon = classy.Stake;
+        classes.push_back(classy);
+        classy.reviveSpeedMultipler = 1;
+
+        classy.name = "Engineer";
+        classy.description = "Raging against the Demonic Machine.";
+        classy.abilityDescription = "Deconstruction(Deals double base damage to constructs and buildings)";
+        classy.constructDamageMultipler = 2;
+        classy.rangeWeapon = classy.Shotgun;
+        classy.meleeWeapon = classy.Sledgehammer;
+        classes.push_back(classy);
+        classy.constructDamageMultipler = 1;
+
+        classy.name = "Enforcer";
+        classy.description = "Even demons have to follow the holy law.";
+        classy.abilityDescription = "Unstoppable(When health reaches 0, You have 10 seconds before you fall. Can be healed during this time.)";
+        classy.unstoppable = true;
+        classy.rangeWeapon = classy.AssaultRifle;
+        classy.meleeWeapon = classy.Baton;
+        classes.push_back(classy);
+        classy.unstoppable = false;
+
+        classy.name = "Sniper";
+        classy.description = "It's never a long shot when he's around.";
+        classy.abilityDescription = "Piercing Rounds(Bullets go through unlimited enemies)";
+        classy.bulletsPierce = true;
+        classy.rangeWeapon = classy.SniperRifle;
+        classy.meleeWeapon = classy.Knife;
+        classes.push_back(classy);
+        classy.bulletsPierce = false;
+
+        classy.name = "Angel";
+        classy.description = "Good has never been better.";
+        classy.abilityDescription = "Holy Smite(Deals +100% damage to the forces of evil. Does not apply to constructs or buildings)";
+        classy.evilDamageMultipler = 2;
+        classy.rangeWeapon = classy.LightningArcs;
+        classy.meleeWeapon = classy.HolyMace;
+        classes.push_back(classy);
+        classy.evilDamageMultipler = 1;
+
+        classy.name = "Monk";
+        classy.description = "Balance has been achieved.";
+        classy.abilityDescription = "Moment of Focus(Every enemy killed grants +5 stacks of Focus, Each stack of Focus grants +1% damage, damage resistence, and attack speed; 1 stack decays per second)";
+        classy.focusable = true;
+        classy.rangeWeapon = classy.NoRange;
+        classy.meleeWeapon = classy.DivineArts;
+        classes.push_back(classy);
+        classy.focusable = false;
 
     }
 };
