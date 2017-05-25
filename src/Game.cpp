@@ -1108,14 +1108,29 @@ public:
     float moveSpeed;
     float getMoveSpeed()
     {
-        return moveSpeed;
+        float moveSpeedMulti = 1;
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::Sprinter)
+                moveSpeedMulti += 0.25;
+        }
+
+        return moveSpeed*moveSpeedMulti;
     }
     float stamina;
     float staminaMax;
     float staminaRegen;
     float getStaminaRegen()
     {
-        return staminaRegen;
+        float staminaMulti = 1;
+
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::Sprinter)
+                staminaMulti += 0.5;
+        }
+
+        return staminaRegen*staminaMulti;
     }
     float getStaminaMax()
     {
@@ -1140,6 +1155,32 @@ public:
 
         return returnStatus;
     }
+
+    float getConstructDamageMultiplier()
+    {
+        float Multi = 1;
+        return Multi;
+    }
+    float getEvilDamageMultiplier()
+    {
+        float Multi = 1;
+        return Multi;
+    }
+    float getReviveMultiplier()
+    {
+        float Multi = 1;
+        return Multi;
+    }
+
+    float getHealBulletMultiplier()
+    {
+        float Multi = 0;
+        return Multi;
+    }
+
+
+
+
 
     unsigned int kills;
     unsigned int deaths;
@@ -1188,27 +1229,27 @@ public:
 
             if(inputState.key[Key::W])
             {
-                yMovement += -player.moveSpeed;
+                yMovement += -player.getMoveSpeed();
             }
 
             if(inputState.key[Key::A])
             {
-                xMovement += -player.moveSpeed;
+                xMovement += -player.getMoveSpeed();
             }
 
             if(inputState.key[Key::S])
             {
-                yMovement += player.moveSpeed;
+                yMovement += player.getMoveSpeed();
             }
 
             if(inputState.key[Key::D])
             {
-                xMovement += player.moveSpeed;
+                xMovement += player.getMoveSpeed();
             }
 
 
 
-            player.stamina = std::min(player.stamina+1,player.getStaminaMax());
+            player.stamina = std::min(player.stamina+player.getStaminaRegen(),player.getStaminaMax());
 
             if(!player.isTired() && inputState.key[Key::LShift])
             {
@@ -1216,25 +1257,25 @@ public:
 
                 if(inputState.key[Key::W])
                 {
-                    yMovement += -player.moveSpeed*3;
+                    yMovement += -player.getMoveSpeed()*3;
                     isRunning = true;
                 }
 
                 if(inputState.key[Key::A])
                 {
-                    xMovement += -player.moveSpeed*3;
+                    xMovement += -player.getMoveSpeed()*3;
                     isRunning = true;
                 }
 
                 if(inputState.key[Key::S])
                 {
-                    yMovement += player.moveSpeed*3;
+                    yMovement += player.getMoveSpeed()*3;
                     isRunning = true;
                 }
 
                 if(inputState.key[Key::D])
                 {
-                    xMovement += player.moveSpeed*3;
+                    xMovement += player.getMoveSpeed()*3;
                     isRunning = true;
                 }
 
@@ -2210,13 +2251,19 @@ void runnersMenu()
 
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+15,15,sf::Color::White,"*Stats* ", &gvars::hudView);
 
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.moveSpeed), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+30,15,sf::Color::White,"* Move Speed: " + std::to_string(player.getMoveSpeed()), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+45,15,sf::Color::White,"* Max Stamina: " + std::to_string((int) player.getStaminaMax()), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+60,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+60,15,sf::Color::White,"* Stamina Regen: " + std::to_string(player.getStaminaRegen()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+75,15,sf::Color::White,"* Max Health: " + std::to_string((int) player.healthMax), &gvars::hudView);
 
 
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+90,15,sf::Color::White,"* Melee Damage: ???", &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+105,15,sf::Color::White,"* Range Damage: ???", &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+120,15,sf::Color::White,"* Construct Multiplier: " + std::to_string(player.getConstructDamageMultiplier()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+135,15,sf::Color::White,"* Evil Damage Multiplier: " + std::to_string(player.getEvilDamageMultiplier()), &gvars::hudView);
+
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+165,15,sf::Color::White,"* Revive Multiplier: " + std::to_string(player.getReviveMultiplier()), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+180,15,sf::Color::White,"* Healing Bullet Multiplier: " + std::to_string(player.getHealBulletMultiplier()), &gvars::hudView);
 
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+300,15,sf::Color::White,"* Kills/Deaths: " + std::to_string(player.kills) + "/" + std::to_string(player.deaths), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+315,15,sf::Color::White,"* Revives(ed): " + std::to_string(player.reviveCount) + "/" + std::to_string(player.revivedCount), &gvars::hudView);
