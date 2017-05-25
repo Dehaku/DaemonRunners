@@ -1171,19 +1171,47 @@ public:
     }
     float getEvilDamageMultiplier()
     {
+        float baseMulti = characterClass.evilDamageMultipler;
         float Multi = 1;
-        return Multi;
+
+        /*
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::DemolitionsExpert)
+                Multi += 1;
+        }
+        */
+
+        return baseMulti*Multi;
     }
     float getReviveMultiplier()
     {
+        float baseMulti = characterClass.reviveSpeedMultipler;
         float Multi = 1;
-        return Multi;
+
+        /*
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::DemolitionsExpert)
+                Multi += 1;
+        }
+        */
+
+        return baseMulti*Multi;
     }
 
     float getHealBulletMultiplier()
     {
+        float baseMulti = 1;
         float Multi = 0;
-        return Multi;
+
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::HealingWounds)
+                Multi += 0.2;
+        }
+
+        return baseMulti*Multi;
     }
 
 
