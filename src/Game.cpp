@@ -1158,8 +1158,16 @@ public:
 
     float getConstructDamageMultiplier()
     {
+        float baseMulti = characterClass.constructDamageMultipler;
         float Multi = 1;
-        return Multi;
+
+        for(auto &trait : traits)
+        {
+            if(trait.traitID == Trait::DemolitionsExpert)
+                Multi += 1;
+        }
+
+        return baseMulti*Multi;
     }
     float getEvilDamageMultiplier()
     {
