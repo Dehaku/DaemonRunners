@@ -1280,7 +1280,7 @@ public:
                 }
 
                 if(isRunning)
-                    player.stamina -= 2;
+                    player.stamina -= 3;
 
             }
 
