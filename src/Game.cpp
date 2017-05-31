@@ -864,6 +864,8 @@ public:
     float attackStun;
     float attackRadius;
 
+    float attackSpeedTimer;
+
     int magSize;
     int magCurrent;
 
@@ -904,9 +906,12 @@ public:
         attackStun = 10;
         attackRadius = 1; // Bullet Spread/Melee Swing Arc
 
+        attackSpeedTimer = 0;
 
         magSize = 0;
         reloadSpeed = 600;
+        reloadSpeedTimer = 0;
+
 
         beam = false;
 
@@ -1288,8 +1293,8 @@ public:
     bool focusable; // Monk
     unsigned int focusStacks; // Monk
 
-    unsigned int rangeWeapon;
-    unsigned int meleeWeapon;
+    Weapon rangeWeapon;
+    Weapon meleeWeapon;
 
 
     CharacterClass()
@@ -1305,8 +1310,8 @@ public:
         focusable = false;
         focusStacks = 0;
 
-        rangeWeapon = Weapon::Nothing;
-        meleeWeapon = Weapon::Nothing;
+        rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        meleeWeapon = weaponManager.getWeapon(Weapon::Nothing);
     }
 
 };
@@ -1324,8 +1329,8 @@ public:
         classy.description = "Making demons wholly holeyer by his holy self since genesis.";
         classy.abilityDescription = "Revive(4x Revival Speed)";
         classy.reviveSpeedMultipler = 4;
-        classy.rangeWeapon = Weapon::HolyRays;
-        classy.meleeWeapon = Weapon::Stake;
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::HolyRays);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::Stake);
         classes.push_back(classy);
         classy.reviveSpeedMultipler = 1;
 
@@ -1333,8 +1338,8 @@ public:
         classy.description = "Raging against the Demonic Machine.";
         classy.abilityDescription = "Deconstruction(Deals double base damage to constructs and buildings)";
         classy.constructDamageMultipler = 2;
-        classy.rangeWeapon = Weapon::Shotgun;
-        classy.meleeWeapon = Weapon::Sledgehammer;
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::Shotgun);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::Sledgehammer);
         classes.push_back(classy);
         classy.constructDamageMultipler = 1;
 
@@ -1342,8 +1347,8 @@ public:
         classy.description = "Even demons have to follow the holy law.";
         classy.abilityDescription = "Unstoppable(When health reaches 0, You have 10 seconds before you fall. Can be healed during this time.)";
         classy.unstoppable = true;
-        classy.rangeWeapon = Weapon::AssaultRifle;
-        classy.meleeWeapon = Weapon::Baton;
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::AssaultRifle);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::Baton);
         classes.push_back(classy);
         classy.unstoppable = false;
 
@@ -1351,8 +1356,8 @@ public:
         classy.description = "It's never a long shot when he's around.";
         classy.abilityDescription = "Piercing Rounds!";
         classy.bulletsPierce = true;
-        classy.rangeWeapon = Weapon::SniperRifle;
-        classy.meleeWeapon = Weapon::Knife;
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::SniperRifle);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::Knife);
         classes.push_back(classy);
         classy.bulletsPierce = false;
 
@@ -1360,8 +1365,8 @@ public:
         classy.description = "Good has never been better.";
         classy.abilityDescription = "Holy Smite(Deals +100% damage to the forces of evil. Does not apply to constructs or buildings)";
         classy.evilDamageMultipler = 2;
-        classy.rangeWeapon = Weapon::LightningArcs;
-        classy.meleeWeapon = Weapon::HolyMace;
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::LightningArcs);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::HolyMace);
         classes.push_back(classy);
         classy.evilDamageMultipler = 1;
 
@@ -1369,8 +1374,8 @@ public:
         classy.description = "Balance has been achieved.";
         classy.abilityDescription = "Moment of Focus(Every enemy killed grants +5 stacks of Focus)";
         classy.focusable = true;
-        classy.rangeWeapon = Weapon::Nothing;
-        classy.meleeWeapon = Weapon::DivineArts;
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::DivineArts);
         classes.push_back(classy);
         classy.focusable = false;
 
@@ -1387,6 +1392,8 @@ public:
     sf::Vector2f lastValidPos;
 
     CharacterClass characterClass;
+
+
 
     std::list<Trait> traits;
     void genBaseTraits()
@@ -1666,6 +1673,20 @@ public:
 
     void runPlayerCharacterLogic()
     {
+        if(players.empty())
+            return;
+
+        Player& player = *players.back().get();
+
+        Weapon &meleeWeapon = player.characterClass.meleeWeapon;
+        Weapon &rangeWeapon = player.characterClass.rangeWeapon;
+
+        meleeWeapon.attackSpeedTimer--;
+        rangeWeapon.attackSpeedTimer--;
+    }
+
+    void runPlayerCharacterInput()
+    {
 
         if(players.empty())
             return;
@@ -1782,9 +1803,17 @@ public:
 
 
         { // Attack Code
+            Weapon &meleeWeapon = player.characterClass.meleeWeapon;
+            Weapon &rangeWeapon = player.characterClass.rangeWeapon;
 
-            if(inputState.lmbTime == 1)
+
+
+
+
+            if(rangeWeapon.attackSpeedTimer <= 0 && inputState.lmbTime)
             { // Range
+                rangeWeapon.attackSpeedTimer = rangeWeapon.attackSpeed;
+
 
                 Attack attack;
                 attack.owner = players.back();
@@ -1794,8 +1823,10 @@ public:
 
             }
 
-            if(inputState.rmbTime == 1)
+            if(meleeWeapon.attackSpeedTimer <= 0 && inputState.rmbTime)
             { // Melee
+                meleeWeapon.attackSpeedTimer = meleeWeapon.attackSpeed;
+                //if(player.)
 
                 Attack attack;
                 attack.owner = players.back();
@@ -1935,7 +1966,7 @@ void AttackManager::manageAttacks()
 
         if(attack.attackType == attack.melee)
         {
-            Weapon weapon = weaponManager.getWeapon(owner.characterClass.meleeWeapon);
+            Weapon weapon = owner.characterClass.meleeWeapon;
 
             float baseRot = owner.rotation;
             float radius = weapon.attackRadius/2;
@@ -2811,8 +2842,8 @@ void runnersMenu()
     }
 
 
-    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+45,15,sf::Color::White,"Range: " + weaponManager.getWeapon(player.characterClass.rangeWeapon).name, &gvars::hudView);
-    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+60,15,sf::Color::White,"Melee: " + weaponManager.getWeapon(player.characterClass.meleeWeapon).name, &gvars::hudView);
+    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+45,15,sf::Color::White,"Range: " + player.characterClass.rangeWeapon.name, &gvars::hudView);
+    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+60,15,sf::Color::White,"Melee: " + player.characterClass.meleeWeapon.name, &gvars::hudView);
 
 
     int traitOffset = 0;
@@ -2871,9 +2902,9 @@ void runnersMenu()
             shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset++),12,sf::Color(200,200,200),classy.abilityDescription, &gvars::hudView);
 
             std::string weaponNames = "Weapons: ";
-            weaponNames.append(weaponManager.getWeapon(classy.rangeWeapon).name);
+            weaponNames.append(classy.rangeWeapon.name);
             weaponNames.append(" / ");
-            weaponNames.append(weaponManager.getWeapon(classy.meleeWeapon).name);
+            weaponNames.append(classy.meleeWeapon.name);
 
             shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset++),12,sf::Color(200,200,200),weaponNames, &gvars::hudView);
 
@@ -2927,8 +2958,8 @@ void runnersMenu()
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Cyan,"* Energy Shield Health: " + std::to_string(player.getEnergyShieldMax()), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::Cyan,"* Energy Shield Reduction: " + std::to_string(player.getEnergyShieldArmorReduction()), &gvars::hudView);
         yOSet += 2;
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Range Damage: " + std::to_string(weaponManager.getWeapon(player.characterClass.rangeWeapon).attackDamage), &gvars::hudView);
-        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Melee Damage: " + std::to_string(weaponManager.getWeapon(player.characterClass.meleeWeapon).attackDamage), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Range Damage: " + std::to_string(player.characterClass.rangeWeapon.attackDamage), &gvars::hudView);
+        shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Melee Damage: " + std::to_string(player.characterClass.meleeWeapon.attackDamage), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Construct Multiplier: " + std::to_string(player.getConstructDamageMultiplier()), &gvars::hudView);
         shapes.createText(HUDPos.x+xOffset,HUDPos.y+(15*yOSet++),15,sf::Color::White,"* Evil Damage Multiplier: " + std::to_string(player.getEvilDamageMultiplier()), &gvars::hudView);
         yOSet++;
@@ -2964,8 +2995,8 @@ void runnersMenu()
         // Weapon Display Time!
         yOSet = 0;
         xOffset += 436;
-        Weapon rangeWeapon = weaponManager.getWeapon(player.characterClass.rangeWeapon);
-        Weapon meleeWeapon = weaponManager.getWeapon(player.characterClass.meleeWeapon);
+        Weapon rangeWeapon = player.characterClass.rangeWeapon;
+        Weapon meleeWeapon = player.characterClass.meleeWeapon;
 
         if(rangeWeapon.weaponID != Weapon::Nothing)
         {
@@ -3685,7 +3716,7 @@ void spawning()
 void runPlayerInputs()
 {
 
-    playerManager.runPlayerCharacterLogic();
+    playerManager.runPlayerCharacterInput();
     spawning();
 }
 
@@ -3696,7 +3727,7 @@ void runGame()
 
 
     // enemyManager.runEnemyLogic();
-
+    playerManager.runPlayerCharacterLogic();
     attackManager.manageAttacks();
 
 
