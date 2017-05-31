@@ -3492,6 +3492,29 @@ void drawPlayers()
     window.setView(oldView);
 }
 
+void drawPlayerAttackCooldowns()
+{
+    if(playerManager.players.empty())
+        return;
+
+    Player &player = *playerManager.players.back().get();
+
+    Weapon &meleeWeapon = player.characterClass.meleeWeapon;
+    Weapon &rangeWeapon = player.characterClass.rangeWeapon;
+
+    float meleeBar = 20*(std::max(meleeWeapon.attackSpeedTimer,0.f)/meleeWeapon.attackSpeed);
+    float rangeBar = 20*(std::max(rangeWeapon.attackSpeedTimer,0.f)/rangeWeapon.attackSpeed);
+
+
+    sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
+    sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos);
+
+    shapes.createSquare(worldPos.x+10,worldPos.y+10,worldPos.x+10+5,worldPos.y+10-rangeBar,sf::Color::Red,0,sf::Color::Transparent,&gvars::hudView);
+    shapes.createSquare(worldPos.x+17,worldPos.y+10,worldPos.x+17+5,worldPos.y+10-meleeBar,sf::Color::Blue,0,sf::Color::Transparent,&gvars::hudView);
+
+
+}
+
 void renderGame()
 {
 
@@ -3503,6 +3526,8 @@ void renderGame()
     enemyManager.drawEnemies();
 
     drawPlayers();
+
+    drawPlayerAttackCooldowns();
 
     generalFunctions();
 
