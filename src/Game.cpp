@@ -1794,7 +1794,7 @@ public:
 
             }
 
-            if(inputState.rmbTime)
+            if(inputState.rmbTime == 1)
             { // Melee
 
                 Attack attack;
@@ -1842,7 +1842,14 @@ class Enemy : public Player
 {
 public:
     int pathFinding;
+    bool creature;
+    bool construct;
 
+    Enemy()
+    {
+        creature = true;
+        construct = false;
+    }
 };
 
 class EnemyManager
@@ -1924,16 +1931,43 @@ void AttackManager::manageAttacks()
 
         Player &owner = *attack.owner.lock().get();
 
+
+
         if(attack.attackType == attack.melee)
         {
-
             Weapon weapon = weaponManager.getWeapon(owner.characterClass.meleeWeapon);
+
+            float baseRot = owner.rotation;
+            float radius = weapon.attackRadius/2;
 
             if(attack.firstFrame)
             { // Attack Code
                 attack.firstFrame = false;
 
+                for(auto &enemyPtr : enemyManager.enemies)
+                {
+                    Enemy &enemy = *enemyPtr.get();
 
+                    float enemyAngle = math::angleBetweenVectors(owner.pos,enemy.pos);
+                    float compareAngle = math::angleDiff(owner.rotation,enemyAngle);
+
+                    if(compareAngle < radius && compareAngle > -radius && math::distance(owner.pos,enemy.pos) <= weapon.attackRange)
+                    {
+                        shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Red);
+
+                        float finalDamage = weapon.attackDamage;
+                        if(enemy.creature)
+                            finalDamage *= owner.getEvilDamageMultiplier();
+                        if(enemy.construct)
+                            finalDamage *= owner.getConstructDamageMultiplier();
+
+                        enemy.health -= finalDamage;
+
+
+                    }
+
+
+                }
 
 
 
@@ -1961,34 +1995,13 @@ void AttackManager::manageAttacks()
 
             { // Draw Code
 
-                float baseRot = owner.rotation;
-                float radius = weapon.attackRadius/2;
 
-                sf::Vector2f leftEndPos = math::angleCalc(owner.pos,baseRot-radius,weapon.attackRange*10);
-                sf::Vector2f rightEndPos = math::angleCalc(owner.pos,baseRot+radius,weapon.attackRange*10);
+
+                sf::Vector2f leftEndPos = math::angleCalc(owner.pos,baseRot-radius,weapon.attackRange);
+                sf::Vector2f rightEndPos = math::angleCalc(owner.pos,baseRot+radius,weapon.attackRange);
 
                 shapes.createLine(owner.pos.x,owner.pos.y,leftEndPos.x,leftEndPos.y,1,sf::Color::Blue);
                 shapes.createLine(owner.pos.x,owner.pos.y,rightEndPos.x,rightEndPos.y,1,sf::Color::Blue);
-
-                for(auto &enemyPtr : enemyManager.enemies)
-                {
-                    Enemy &enemy = *enemyPtr.get();
-
-                    float enemyAngle = math::angleBetweenVectors(owner.pos,enemy.pos);
-                    float compareAngle = math::angleDiff(owner.rotation,enemyAngle);
-                    std::cout << "Angles: " << math::constrainAngle(math::angleDiff(owner.rotation,enemyAngle)+180) << "/" << math::angleDiff(owner.rotation,enemyAngle) << "/" << enemyAngle << "/" << baseRot << std::endl;
-
-                    if(compareAngle < radius && compareAngle > -radius)
-                    {
-                        shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Green);
-
-
-                    }
-
-
-                }
-
-
             }
         }
     }
