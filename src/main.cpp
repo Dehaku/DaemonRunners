@@ -408,7 +408,7 @@ int main()
         // Program Specific Components
 
 
-
+        runPlayerInputs();
 
         double newTime = fpsKeeper.startTime.getElapsedTime().asSeconds();
         double frameTime = newTime - currentTime;

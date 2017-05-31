@@ -53,6 +53,9 @@ bool chatCommand(std::string input);
 void gameSetup();
 
 void runServerStuffs();
+
+
+void runPlayerInputs();
 void runGame();
 void renderGame();
 

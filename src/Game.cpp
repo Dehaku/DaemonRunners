@@ -1623,10 +1623,46 @@ public:
 
 };
 
+class Attack
+{
+public:
+    std::weak_ptr<Player> owner;
+    int attackType;
+
+    enum AttackTypes
+    {
+        range,
+        melee
+    };
+
+    bool firstFrame;
+    int lifeTime;
+    bool toDelete;
+
+    Attack()
+    {
+        firstFrame = true;
+        lifeTime = 0;
+        toDelete = false;
+    }
+};
+
+class AttackManager
+{
+public:
+    std::list<Attack> attacks;
+
+    void manageAttacks();
+
+
+
+};
+AttackManager attackManager;
+
 class PlayerManager
 {
 public:
-    std::list<Player> players;
+    std::list<std::shared_ptr<Player>> players;
 
     void runPlayerCharacterLogic()
     {
@@ -1634,7 +1670,7 @@ public:
         if(players.empty())
             return;
 
-        Player& player = players.back();
+        Player& player = *players.back().get();
 
         { // Camera Lock
             //gvars::currentx = player.pos.x;
@@ -1745,6 +1781,31 @@ public:
 
 
 
+        { // Attack Code
+
+            if(inputState.lmbTime == 1)
+            { // Range
+
+                Attack attack;
+                attack.owner = players.back();
+                attack.attackType = attack.range;
+                attack.lifeTime = 1;
+                attackManager.attacks.push_back(attack);
+
+            }
+
+            if(inputState.rmbTime)
+            { // Melee
+
+                Attack attack;
+                attack.owner = players.back();
+                attack.attackType = attack.melee;
+                attack.lifeTime = 3;
+                attackManager.attacks.push_back(attack);
+
+            }
+
+        }
 
 
 
@@ -1753,7 +1814,10 @@ public:
 
     void makePlayer()
     {
-        Player player;
+        std::shared_ptr<Player> playerPtr(new Player());
+        players.push_back(playerPtr);
+        Player &player = *playerPtr.get();
+
         player.pos = gvars::mousePos;
         player.healthMax = 100;
         player.health = player.healthMax;
@@ -1768,7 +1832,7 @@ public:
 
         player.genBaseTraits();
 
-        players.push_back(player);
+
     }
 
 };
@@ -1807,6 +1871,7 @@ public:
         {
             dummySprite.setTexture(dummyTex);
             dummySprite.setOrigin(dummyTex.getSize().x/2,dummyTex.getSize().y/2);
+            dummySprite.scale(sf::Vector2f(0.5,0.5));
         }
 
 
@@ -1840,6 +1905,96 @@ public:
 };
 EnemyManager enemyManager;
 
+void AttackManager::manageAttacks()
+{
+    for(auto &attack : attacks)
+    {
+        if(!attack.owner.lock())
+        {
+            attack.toDelete = true;
+            continue;
+        }
+
+        if(attack.lifeTime <= 0)
+        {
+            attack.toDelete = true;
+            continue;
+        }
+        attack.lifeTime--;
+
+        Player &owner = *attack.owner.lock().get();
+
+        if(attack.attackType == attack.melee)
+        {
+
+            Weapon weapon = weaponManager.getWeapon(owner.characterClass.meleeWeapon);
+
+            if(attack.firstFrame)
+            { // Attack Code
+                attack.firstFrame = false;
+
+
+
+
+
+
+                /*
+            weapon.weaponID = Weapon::Sledgehammer;
+            weapon.melee = true;
+
+            weapon.attackDamage = 50;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 30;
+            weapon.attackStun = 30;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            */
+
+
+
+
+            }
+
+            { // Draw Code
+
+                float baseRot = owner.rotation;
+                float radius = weapon.attackRadius/2;
+
+                sf::Vector2f leftEndPos = math::angleCalc(owner.pos,baseRot-radius,weapon.attackRange*10);
+                sf::Vector2f rightEndPos = math::angleCalc(owner.pos,baseRot+radius,weapon.attackRange*10);
+
+                shapes.createLine(owner.pos.x,owner.pos.y,leftEndPos.x,leftEndPos.y,1,sf::Color::Blue);
+                shapes.createLine(owner.pos.x,owner.pos.y,rightEndPos.x,rightEndPos.y,1,sf::Color::Blue);
+
+                for(auto &enemyPtr : enemyManager.enemies)
+                {
+                    Enemy &enemy = *enemyPtr.get();
+
+                    float enemyAngle = math::angleBetweenVectors(owner.pos,enemy.pos);
+                    float compareAngle = math::angleDiff(owner.rotation,enemyAngle);
+                    std::cout << "Angles: " << math::constrainAngle(math::angleDiff(owner.rotation,enemyAngle)+180) << "/" << math::angleDiff(owner.rotation,enemyAngle) << "/" << enemyAngle << "/" << baseRot << std::endl;
+
+                    if(compareAngle < radius && compareAngle > -radius)
+                    {
+                        shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Green);
+
+
+                    }
+
+
+                }
+
+
+            }
+        }
+    }
+    AnyDeletes(attacks);
+}
+
 
 
 
@@ -1848,7 +2003,7 @@ bool playerCamera()
     if(playerManager.players.empty())
         return false;
 
-   gvars::view1.setCenter(playerManager.players.back().pos);
+   gvars::view1.setCenter(playerManager.players.back().get()->pos);
 
    return true;
 }
@@ -2603,7 +2758,7 @@ void runnersMenu()
     if(playerManager.players.empty())
         return;
 
-    Player &player = playerManager.players.back();
+    Player &player = *playerManager.players.back().get();
 
     static Trait* selectedTrait = nullptr;
     static bool needsClass = false;
@@ -3259,6 +3414,7 @@ void drawPlayers()
     if(angelSprite.getTexture() == nullptr)
     {
         angelSprite.setTexture(angelTex);
+        angelSprite.scale(sf::Vector2f(0.5,0.5));
         angelSprite.setOrigin(angelTex.getSize().x/2,angelTex.getSize().y/2);
     }
 
@@ -3268,8 +3424,9 @@ void drawPlayers()
     window.setView(gvars::view1);
 
     // Render stuffs
-    for(auto &player : playerManager.players)
+    for(auto &playerPtr : playerManager.players)
     {
+        Player &player = *playerPtr.get();
         angelSprite.setPosition(player.pos);
         angelSprite.setRotation(player.rotation+90);
         window.draw(angelSprite);
@@ -3512,14 +3669,24 @@ void spawning()
     }
 }
 
+void runPlayerInputs()
+{
+
+    playerManager.runPlayerCharacterLogic();
+    spawning();
+}
+
 void runGame()
 {
     static int globalCycle = 0;
     globalCycle++;
 
-    playerManager.runPlayerCharacterLogic();
 
-    spawning();
+    // enemyManager.runEnemyLogic();
+
+    attackManager.manageAttacks();
+
+
 
 
     if((globalCycle % 60) == 0)
