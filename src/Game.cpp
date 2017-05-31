@@ -1602,6 +1602,17 @@ public:
     {
         staminaRegen = 1;
 
+        healthMax = 100;
+        health = healthMax;
+        staminaMax = 1000;
+        stamina = staminaMax;
+
+        rotation = 0;
+        rotationSpeed = 5;
+
+
+        moveSpeed = 1;
+
         kills = 0;
         deaths = 0;
         reviveCount = 0;
@@ -1762,6 +1773,75 @@ public:
 
 };
 PlayerManager playerManager;
+
+class Enemy : public Player
+{
+public:
+    int pathFinding;
+
+};
+
+class EnemyManager
+{
+public:
+    std::list<std::shared_ptr<Enemy>> enemies;
+
+    void makeEnemy(sf::Vector2f spawnPos)
+    {
+
+        std::shared_ptr<Enemy> enemyPtr(new Enemy());
+        enemies.push_back(enemyPtr);
+        Enemy &enemy = *enemies.back().get();
+
+        enemy.name = "Enemy Dummy";
+        enemy.pos = spawnPos;
+        //enemy.healthMax = 100;
+    }
+
+    void drawEnemies()
+    {
+
+        static sf::Texture& dummyTex = texturemanager.getTexture("Enemy Dummy.png");
+        static sf::Sprite dummySprite;
+        if(dummySprite.getTexture() == nullptr)
+        {
+            dummySprite.setTexture(dummyTex);
+            dummySprite.setOrigin(dummyTex.getSize().x/2,dummyTex.getSize().y/2);
+        }
+
+
+        // Setting View
+        sf::View oldView = window.getView();
+        window.setView(gvars::view1);
+
+        // Render stuffs
+        for(auto &enemyPtr : enemies)
+        {
+            Enemy &enemy = *enemyPtr.get();
+
+            dummySprite.setPosition(enemy.pos);
+            dummySprite.setRotation(enemy.rotation+90);
+            window.draw(dummySprite);
+
+
+            std::string staminaString;
+            staminaString.append(std::to_string( (int) enemy.health) );
+            staminaString.append("/");
+            staminaString.append(std::to_string( (int) enemy.getHealthMax()));
+
+
+            shapes.createText(enemy.pos.x,enemy.pos.y+25,10,sf::Color::Red,staminaString);
+        }
+
+        // Fixing View
+        window.setView(oldView);
+
+    }
+};
+EnemyManager enemyManager;
+
+
+
 
 bool playerCamera()
 {
@@ -3219,6 +3299,8 @@ void renderGame()
     if(inputState.key[Key::E])
         worldManager.drawWalkableTiles();
 
+    enemyManager.drawEnemies();
+
     drawPlayers();
 
     generalFunctions();
@@ -3422,7 +3504,13 @@ void runServerStuffs()
 
 
 
-
+void spawning()
+{
+    if(inputState.key[Key::LShift] && inputState.key[Key::R].time == 1)
+    {
+        enemyManager.makeEnemy(gvars::mousePos);
+    }
+}
 
 void runGame()
 {
@@ -3431,7 +3519,7 @@ void runGame()
 
     playerManager.runPlayerCharacterLogic();
 
-
+    spawning();
 
 
     if((globalCycle % 60) == 0)
