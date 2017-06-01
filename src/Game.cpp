@@ -1630,11 +1630,38 @@ public:
 
 };
 
+class AttackMemory
+{
+public:
+    int lifeTime;
+    sf::Vector2f startPos;
+    sf::Vector2f endPos;
+    float rotation;
+    float radius;
+    sf::Color color;
+    bool melee;
+    bool range;
+
+    bool toDelete;
+
+    AttackMemory()
+    {
+        lifeTime = 3;
+        melee = false;
+        range = false;
+        toDelete = false;
+    }
+};
+
 class Attack
 {
 public:
     std::weak_ptr<Player> owner;
     int attackType;
+
+    std::list<AttackMemory> memory;
+
+
 
     enum AttackTypes
     {
@@ -1818,7 +1845,7 @@ public:
                 Attack attack;
                 attack.owner = players.back();
                 attack.attackType = attack.range;
-                attack.lifeTime = 1;
+                attack.lifeTime = 15;
                 attackManager.attacks.push_back(attack);
 
             }
@@ -1943,6 +1970,102 @@ public:
 };
 EnemyManager enemyManager;
 
+
+
+bool canSeeNpc(Player &ori, Player &target)
+{
+    int GRID_SIZE = 32;
+    bool foundTarget = false;
+    bool foundOri = false;
+
+    float x1 = ori.pos.x, y1 = ori.pos.y, x2 = target.pos.x, y2 = target.pos.y;
+
+    // Bresenham's line algorithm
+    const bool steep = (fabs(y2 - y1) > fabs(x2 - x1));
+    if(steep)
+    {
+        std::swap(x1, y1);
+        std::swap(x2, y2);
+    }
+
+    if(x1 > x2)
+    {
+        std::swap(x1, x2);
+        std::swap(y1, y2);
+    }
+
+    const float dx = x2 - x1;
+    const float dy = fabs(y2 - y1);
+
+    float error = dx / 2.0f;
+    const int ystep = (y1 < y2) ? 1 : -1;
+    int y = (int)y1;
+
+    const int maxX = (int)x2;
+
+    for(int x=(int)x1; x<maxX; x++)
+    {
+        if(steep)
+        {
+
+
+
+            //if(tiles[abs_to_index(y/GRID_SIZE)][abs_to_index(x/GRID_SIZE)][gvars::currentz].walkable)
+            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(y,x) ))
+            {
+                if(math::distance(sf::Vector2f(y,x),target.pos) <= 32/2)
+                {
+                    foundTarget = true;
+                }
+                if(math::distance(sf::Vector2f(y,x),ori.pos) <= 32/2) // Set target.size to ori critter in final version.
+                {
+                    foundOri = true;
+                }
+            }
+            else
+            {
+                //Ran into a wall, Cannot see further.
+                return false;
+            }
+        }
+        else
+        {
+            //if(tiles[abs_to_index(x/GRID_SIZE)][abs_to_index(y/GRID_SIZE)][gvars::currentz].walkable)
+            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(x,y) ))
+            {
+                if(math::distance(sf::Vector2f(x,y),target.pos) <= 32/2)
+                {
+                    foundTarget = true;
+                }
+                if(math::distance(sf::Vector2f(x,y),ori.pos) <= 32/2) // Set target.size to ori critter in final version.
+                {
+                    foundOri = true;
+                }
+            }
+            else
+            {
+                //Ran into a wall, Cannot see further.
+                return false;
+            }
+        }
+        error -= dy;
+        if(error < 0)
+        {
+            y += ystep;
+            error += dx;
+        }
+    }
+    if(foundOri && foundTarget) // This is done due to Bresenham's line automatically using the topleft most coordinate. (Half cases start trace on target.)
+        return true;
+
+    return false;
+}
+
+
+
+
+
+
 void AttackManager::manageAttacks()
 {
     for(auto &attack : attacks)
@@ -1962,6 +2085,118 @@ void AttackManager::manageAttacks()
 
         Player &owner = *attack.owner.lock().get();
 
+
+        if(attack.attackType == attack.range)
+        {
+            Weapon weapon = owner.characterClass.rangeWeapon;
+
+            float baseRot = owner.rotation;
+            //float radius = weapon.attackRadius/2;
+
+            if(attack.firstFrame)
+            { // Attack Code
+                attack.firstFrame = false;
+
+
+                for(int i = 0; i != weapon.bulletAmount; i++)
+                {
+                    sf::Vector2f bulletHitLocation = math::angleCalc(owner.pos,baseRot+random(-weapon.attackRadius/2,weapon.attackRadius/2),weapon.attackRange);
+                    AttackMemory atkMem;
+                    atkMem.startPos = owner.pos;
+                    atkMem.endPos = bulletHitLocation;
+                    atkMem.lifeTime = 15;
+                    atkMem.range = true;
+                    atkMem.color = sf::Color::White;
+                    attack.memory.push_back(atkMem);
+
+
+                    for(auto &enemyPtr : enemyManager.enemies)
+                    {
+                        Enemy &enemy = *enemyPtr.get();
+
+                        if(canSeeNpc(owner,enemy))
+                        {
+                            //shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Red);
+                        }
+                    }
+
+
+
+
+
+                }
+
+
+
+
+                /*
+                for(auto &enemyPtr : enemyManager.enemies)
+                {
+                    Enemy &enemy = *enemyPtr.get();
+
+                    float enemyAngle = math::angleBetweenVectors(owner.pos,enemy.pos);
+                    float compareAngle = math::angleDiff(owner.rotation,enemyAngle);
+
+                    if(compareAngle < radius && compareAngle > -radius && math::distance(owner.pos,enemy.pos) <= weapon.attackRange)
+                    {
+                        shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Red);
+
+                        float finalDamage = weapon.attackDamage;
+                        if(enemy.creature)
+                            finalDamage *= owner.getEvilDamageMultiplier();
+                        if(enemy.construct)
+                            finalDamage *= owner.getConstructDamageMultiplier();
+
+                        enemy.health -= finalDamage;
+
+
+                    }
+
+
+                }
+
+                */
+
+
+
+
+                /*
+            weapon.weaponID = Weapon::Sledgehammer;
+            weapon.melee = true;
+
+            weapon.attackDamage = 50;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 30;
+            weapon.attackStun = 30;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            */
+
+
+
+
+            }
+
+            /*
+
+            { // Draw Code
+
+
+
+                sf::Vector2f leftEndPos = math::angleCalc(owner.pos,baseRot-radius,weapon.attackRange);
+                sf::Vector2f rightEndPos = math::angleCalc(owner.pos,baseRot+radius,weapon.attackRange);
+
+                shapes.createLine(owner.pos.x,owner.pos.y,leftEndPos.x,leftEndPos.y,1,sf::Color::Blue);
+                shapes.createLine(owner.pos.x,owner.pos.y,rightEndPos.x,rightEndPos.y,1,sf::Color::Blue);
+            }
+
+            */
+
+        }
 
 
         if(attack.attackType == attack.melee)
@@ -3515,6 +3750,17 @@ void drawPlayerAttackCooldowns()
 
 }
 
+void drawAttacks()
+{
+    for(auto &attack : attackManager.attacks)
+    {
+        for(auto &atkMem : attack.memory)
+        {
+            shapes.createLine(atkMem.startPos.x,atkMem.startPos.y,atkMem.endPos.x,atkMem.endPos.y,1,atkMem.color);
+        }
+    }
+}
+
 void renderGame()
 {
 
@@ -3526,6 +3772,8 @@ void renderGame()
     enemyManager.drawEnemies();
 
     drawPlayers();
+
+    drawAttacks();
 
     drawPlayerAttackCooldowns();
 
