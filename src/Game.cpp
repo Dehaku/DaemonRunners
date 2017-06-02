@@ -555,6 +555,7 @@ class WorldManager
 {
 public:
     std::list<World> worlds;
+    unsigned int globalIDs;
     void generateWorld(unsigned int minSize = 3, int maxSize = 10)
     {
         bool properSize = false;
@@ -845,6 +846,12 @@ public:
 
 
     }
+
+    WorldManager()
+    {
+        globalIDs = 0;
+    }
+
 };
 WorldManager worldManager;
 
@@ -1388,6 +1395,7 @@ class Player
 public:
 
     std::string name;
+    unsigned int id;
     sf::Vector2f pos;
     sf::Vector2f lastValidPos;
 
@@ -1607,6 +1615,7 @@ public:
 
     Player()
     {
+        id = worldManager.globalIDs++;
         staminaRegen = 1;
 
         healthMax = 100;
@@ -1905,6 +1914,7 @@ public:
 
     Enemy()
     {
+        id = worldManager.globalIDs++;
         creature = true;
         construct = false;
     }
@@ -1914,7 +1924,6 @@ class EnemyManager
 {
 public:
     std::list<std::shared_ptr<Enemy>> enemies;
-
     void makeEnemy(sf::Vector2f spawnPos)
     {
 
@@ -1967,102 +1976,90 @@ public:
         window.setView(oldView);
 
     }
+
+
+
 };
 EnemyManager enemyManager;
 
 
 
-bool canSeeNpc(Player &ori, Player &target)
+sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos, std::list<std::shared_ptr<Enemy>> &enemies)
 {
-    int GRID_SIZE = 32;
-    bool foundTarget = false;
-    bool foundOri = false;
+    std::list<std::weak_ptr<Enemy>> enemiesFound;
+    std::vector<int> foundIDs;
+    sf::Vector2f returnPos;
 
-    float x1 = ori.pos.x, y1 = ori.pos.y, x2 = target.pos.x, y2 = target.pos.y;
 
-    // Bresenham's line algorithm
-    const bool steep = (fabs(y2 - y1) > fabs(x2 - x1));
-    if(steep)
+    int accuracy = 1; // The smaller, the more accurate, but the more frames. Basically how many pixels we skip.
+    sf::Vector2f tracePos = owner.pos;
+    float transitAngle = math::angleBetweenVectors(tracePos,attackPos);
+
+    bool done = false;
+    while(!done)
     {
-        std::swap(x1, y1);
-        std::swap(x2, y2);
-    }
+        if(inputState.key[Key::Tab])
+            shapes.createCircle(tracePos.x,tracePos.y,3,sf::Color::Green);
 
-    if(x1 > x2)
-    {
-        std::swap(x1, x2);
-        std::swap(y1, y2);
-    }
-
-    const float dx = x2 - x1;
-    const float dy = fabs(y2 - y1);
-
-    float error = dx / 2.0f;
-    const int ystep = (y1 < y2) ? 1 : -1;
-    int y = (int)y1;
-
-    const int maxX = (int)x2;
-
-    for(int x=(int)x1; x<maxX; x++)
-    {
-        if(steep)
+        if(math::distance(tracePos,attackPos) <= accuracy)
         {
+            done = true;
+            returnPos = tracePos;
+        }
 
 
+        // Wall damage wil lbe done with this line.
+        if((!worldManager.worlds.empty() && !worldManager.worlds.back().isTileWalkable(sf::Vector2i(tracePos) )))
+        {
+            done = true;
+            returnPos = tracePos;
+        }
 
-            //if(tiles[abs_to_index(y/GRID_SIZE)][abs_to_index(x/GRID_SIZE)][gvars::currentz].walkable)
-            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(y,x) ))
+        for(auto &enemyPtr : enemies)
+        {
+            Enemy &enemy = *enemyPtr.get();
+
+            bool alreadyChecked = false;
+
+            for(auto idCheck : foundIDs)
+                if(enemy.id == idCheck)
+                    alreadyChecked = true;
+
+            if(alreadyChecked)
+                continue;
+
+            if(math::distance(tracePos,enemy.pos) <= 32/2)
             {
-                if(math::distance(sf::Vector2f(y,x),target.pos) <= 32/2)
-                {
-                    foundTarget = true;
-                }
-                if(math::distance(sf::Vector2f(y,x),ori.pos) <= 32/2) // Set target.size to ori critter in final version.
-                {
-                    foundOri = true;
-                }
-            }
-            else
-            {
-                //Ran into a wall, Cannot see further.
-                return false;
+                foundIDs.push_back(enemy.id);
+                enemiesFound.push_back(enemyPtr);
             }
         }
-        else
-        {
-            //if(tiles[abs_to_index(x/GRID_SIZE)][abs_to_index(y/GRID_SIZE)][gvars::currentz].walkable)
-            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(x,y) ))
-            {
-                if(math::distance(sf::Vector2f(x,y),target.pos) <= 32/2)
-                {
-                    foundTarget = true;
-                }
-                if(math::distance(sf::Vector2f(x,y),ori.pos) <= 32/2) // Set target.size to ori critter in final version.
-                {
-                    foundOri = true;
-                }
-            }
-            else
-            {
-                //Ran into a wall, Cannot see further.
-                return false;
-            }
-        }
-        error -= dy;
-        if(error < 0)
-        {
-            y += ystep;
-            error += dx;
-        }
-    }
-    if(foundOri && foundTarget) // This is done due to Bresenham's line automatically using the topleft most coordinate. (Half cases start trace on target.)
-        return true;
 
-    return false;
+
+
+
+        tracePos = math::angleCalc(tracePos,transitAngle,accuracy);
+    }
+
+
+
+    if(enemiesFound.size() > 0)
+    {
+        std::cout << "Enemies Hit: " << enemiesFound.size() << std::endl;
+
+        for(auto &enemyPtr : enemiesFound)
+        {
+            Enemy &enemy = *enemyPtr.lock().get();
+
+            enemy.health -= owner.characterClass.rangeWeapon.attackDamage;
+
+        }
+
+
+    }
+
+    return returnPos;
 }
-
-
-
 
 
 
@@ -2107,20 +2104,11 @@ void AttackManager::manageAttacks()
                     atkMem.lifeTime = 15;
                     atkMem.range = true;
                     atkMem.color = sf::Color::White;
+
+
+                    atkMem.endPos = bulletAttack(attack,owner,atkMem.endPos,enemyManager.enemies);
+
                     attack.memory.push_back(atkMem);
-
-
-                    for(auto &enemyPtr : enemyManager.enemies)
-                    {
-                        Enemy &enemy = *enemyPtr.get();
-
-                        if(canSeeNpc(owner,enemy))
-                        {
-                            //shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Red);
-                        }
-                    }
-
-
 
 
 
