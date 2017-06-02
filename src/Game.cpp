@@ -447,21 +447,46 @@ public:
 
     std::list<WalkableTile> walkableTiles;
 
-    bool isTileWalkable(sf::Vector2i pos)
+    bool isTileWalkableAlt(sf::Vector2i pos)
     {
         if(walkableTiles.empty())
             return false;
 
-        int tries = 0;
-
         for(auto &walkable : walkableTiles)
         {
-            tries++;
             if(aabb(pos,walkable.pos.x-16,walkable.pos.x+16,walkable.pos.y-16,walkable.pos.y+16))
             {
                 return true;
             }
 
+        }
+        return false;
+    }
+
+    bool isTileWalkable(sf::Vector2i pos)
+    {
+        for(auto &chunk : chunks)
+        {
+            sf::Vector2i chunkPos(chunk.pos.x/1024,chunk.pos.y/1024);
+            sf::Vector2i checkPos(pos.x/1024,pos.y/1024);
+            if(checkPos == chunkPos)
+            {
+
+                /*
+                int xRemoval = pos/1024;
+                int xStage2 = pos-(1024*xRemoval);
+                int xTile = xStage2/32;
+                */
+
+                int tilePosX = (pos.x-(1024*(pos.x/1024)))/32;
+                int tilePosY = (pos.y-(1024*(pos.y/1024)))/32;
+
+
+                if(chunk.tiles[tilePosX][tilePosY].walkable)
+                    return true;
+                else
+                    return false;
+            }
         }
         return false;
     }
@@ -568,11 +593,14 @@ public:
             WorldChunk chunk;
 
             chunk.genPaths();
-            chunk.pos = sf::Vector2i(1024,1024);
+            chunk.pos = sf::Vector2i(102400,102400);
             chunk.startingPoint = true;
             world.chunks.push_back(chunk);
             WorldChunk lastChunk = chunk;
             chunk.startingPoint = false;
+
+            gvars::currentx = 10240;
+            gvars::currenty = 10240;
 
 
 
@@ -1886,6 +1914,7 @@ public:
         Player &player = *playerPtr.get();
 
         player.pos = gvars::mousePos;
+        // player.pos = sf::Vector2f(102400,102400);
         player.healthMax = 100;
         player.health = player.healthMax;
         player.staminaMax = 1000;
@@ -1990,6 +2019,8 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
     std::vector<int> foundIDs;
     sf::Vector2f returnPos;
 
+    // Optimizations; Accuracy, Filter enemies before using this function via one 180 degree angle check, or two side by side opposite angle checks to mimic a square.
+    // Possibly also the isWalkableTile function.
 
     int accuracy = 1; // The smaller, the more accurate, but the more frames. Basically how many pixels we skip.
     sf::Vector2f tracePos = owner.pos;
@@ -3562,17 +3593,17 @@ void drawWorld()
         if(wallSprite.getTexture() == nullptr)
         {
             wallSprite.setTexture(wallTex);
-            wallSprite.setOrigin(16,16);
+            // wallSprite.setOrigin(32,32);
         }
         if(floorSprite.getTexture() == nullptr)
         {
             floorSprite.setTexture(floorTex);
-            floorSprite.setOrigin(16,16);
+            // floorSprite.setOrigin(32,32);
         }
         if(weakfenceSprite.getTexture() == nullptr)
         {
             weakfenceSprite.setTexture(weakfenceTex);
-            weakfenceSprite.setOrigin(16,16);
+            // weakfenceSprite.setOrigin(16,16);
         }
 
     }
@@ -3768,6 +3799,7 @@ void renderGame()
     generalFunctions();
 
     chatStuffs();
+
 
 
 
