@@ -96,6 +96,19 @@ public:
     };
 
 
+    void affectHealth(float damage)
+    {
+         health -= std::max(damage-resistence,0.f);
+         if(health <= 0)
+         {
+             health = 0;
+             type = FLOOR;
+             walkable = true;
+             resistence = 0;
+             workTime = 0;
+         }
+    }
+
     ChunkTile()
     {
         type = EMPTY;
@@ -117,6 +130,7 @@ public:
     bool startingPoint;
     bool deadEnd;
     bool bonusChunk;
+
 
 
     void generateTiles();
@@ -461,6 +475,24 @@ public:
 
         }
         return false;
+    }
+
+    ChunkTile& getTile(sf::Vector2i pos)
+    {
+        for(auto &chunk : chunks)
+        {
+            sf::Vector2i chunkPos(chunk.pos.x/1024,chunk.pos.y/1024);
+            sf::Vector2i checkPos(pos.x/1024,pos.y/1024);
+            if(checkPos == chunkPos)
+            {
+
+                int tilePosX = (pos.x-(1024*(pos.x/1024)))/32;
+                int tilePosY = (pos.y-(1024*(pos.y/1024)))/32;
+
+                return chunk.tiles[tilePosX][tilePosY];
+
+            }
+        }
     }
 
     bool isTileWalkable(sf::Vector2i pos)
@@ -2042,6 +2074,14 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
         // Wall damage wil lbe done with this line.
         if((!worldManager.worlds.empty() && !worldManager.worlds.back().isTileWalkable(sf::Vector2i(tracePos) )))
         {
+            ChunkTile & tile = worldManager.worlds.back().getTile(sf::Vector2i(tracePos));
+
+            float finalDamage = owner.characterClass.rangeWeapon.attackDamage;
+
+            finalDamage *= owner.getConstructDamageMultiplier();
+
+            tile.affectHealth(finalDamage);
+
             done = true;
             returnPos = tracePos;
         }
@@ -3852,6 +3892,19 @@ void drawAttacks()
     }
 }
 
+void drawWallInfo()
+{
+    ChunkTile & tile = worldManager.worlds.back().getTile(sf::Vector2i(gvars::mousePos));
+
+    std::string outPut;
+    outPut.append("Health: " + std::to_string(tile.health) + "\n");
+    outPut.append("Resistence: " + std::to_string(tile.resistence) + "\n");
+    shapes.createText(gvars::mousePos.x+10,gvars::mousePos.y+10,15,sf::Color::White,outPut);
+
+
+
+}
+
 void renderGame()
 {
 
@@ -3867,6 +3920,9 @@ void renderGame()
     drawAttacks();
 
     drawPlayerAttackCooldowns();
+
+    if(inputState.key[Key::Tab])
+        drawWallInfo();
 
     generalFunctions();
 
