@@ -2063,11 +2063,17 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
             {
                 foundIDs.push_back(enemy.id);
                 enemiesFound.push_back(enemyPtr);
+
+
+                // Piercing Bullets don't stop this method.
+                // Small chance it'll hit two enemies or so, but that's fine.
+                if(!owner.characterClass.bulletsPierce)
+                {
+                    done = true;
+                    returnPos = tracePos;
+                }
             }
         }
-
-
-
 
         tracePos = math::angleCalc(tracePos,transitAngle,accuracy);
     }
@@ -2082,11 +2088,17 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
         {
             Enemy &enemy = *enemyPtr.lock().get();
 
-            enemy.health -= owner.characterClass.rangeWeapon.attackDamage;
+
+
+            float finalDamage = owner.characterClass.rangeWeapon.attackDamage;
+            if(enemy.creature)
+                finalDamage *= owner.getEvilDamageMultiplier();
+            if(enemy.construct)
+                finalDamage *= owner.getConstructDamageMultiplier();
+
+            enemy.health -= finalDamage;
 
         }
-
-
     }
 
     return returnPos;
