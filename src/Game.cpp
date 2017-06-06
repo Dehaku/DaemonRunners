@@ -2341,6 +2341,40 @@ void AttackManager::manageAttacks()
             { // Attack Code
                 attack.firstFrame = false;
 
+
+                for(auto &chunk : worldManager.worlds.back().chunks)
+                {
+                    sf::Vector2i chunkPos(chunk.pos.x/1024,chunk.pos.y/1024);
+                    sf::Vector2i checkPos(owner.pos.x/1024,owner.pos.y/1024);
+                    if(checkPos == chunkPos)
+                    {
+                        std::cout << chunkPos.x << "/" << chunkPos.y << "||" << checkPos.x << "/" << checkPos.y;
+                        for(int x = 0; x != 32; x++)
+                            for(int y = 0; y != 32; y++)
+                        {
+                            ChunkTile &tile = chunk.tiles[x][y];
+                            int tilePosX = (chunk.pos.x)+(x*32)+16;
+                            int tilePosY = (chunk.pos.y)+(y*32)+16;
+
+                            float tileAngle = math::angleBetweenVectors(owner.pos,sf::Vector2f(tilePosX,tilePosY));
+                            float compareAngle = math::angleDiff(owner.rotation,tileAngle);
+
+
+                            if(compareAngle < radius && compareAngle > -radius && math::distance(owner.pos,sf::Vector2f(tilePosX,tilePosY)) <= weapon.attackRange)
+                            {
+                                float finalDamage = owner.characterClass.meleeWeapon.attackDamage;
+
+                                finalDamage *= owner.getConstructDamageMultiplier();
+
+                                tile.affectHealth(finalDamage);
+
+
+                            }
+                        }
+                    }
+                }
+
+
                 for(auto &enemyPtr : enemyManager.enemies)
                 {
                     Enemy &enemy = *enemyPtr.get();
