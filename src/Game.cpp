@@ -2082,7 +2082,6 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
 
     if(enemiesFound.size() > 0)
     {
-        std::cout << "Enemies Hit: " << enemiesFound.size() << std::endl;
 
         for(auto &enemyPtr : enemiesFound)
         {
@@ -2097,6 +2096,67 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
                 finalDamage *= owner.getConstructDamageMultiplier();
 
             enemy.health -= finalDamage;
+
+
+            std::vector<int> arcedIDs;
+            arcedIDs.push_back(enemy.id);
+            for(int i = 0; i != owner.characterClass.rangeWeapon.arcAmount; i++)
+            {
+                for(auto &arcEnemyPtr : enemyManager.enemies)
+                {
+                    Enemy &arcEnemy = *arcEnemyPtr.get();
+
+                    //if(arcEnemy.id == enemy.id)
+                      //  continue;
+
+                    if(math::distance(enemy.pos,arcEnemy.pos) <= owner.characterClass.rangeWeapon.attackRange)
+                    {
+
+
+
+                        bool beenZapped = false;
+                        for(auto &zapID : arcedIDs)
+                            if(arcEnemy.id == zapID)
+                                beenZapped = true;
+
+                        if(beenZapped)
+                            continue;
+
+
+
+
+
+
+
+                        arcedIDs.push_back(arcEnemy.id);
+                        float finalDamage = owner.characterClass.rangeWeapon.attackDamage;
+                        if(arcEnemy.creature)
+                            finalDamage *= owner.getEvilDamageMultiplier();
+                        if(arcEnemy.construct)
+                            finalDamage *= owner.getConstructDamageMultiplier();
+
+                        arcEnemy.health -= finalDamage;
+
+
+                        AttackMemory atkMem;
+                        atkMem.startPos = enemy.pos;
+                        atkMem.endPos = arcEnemy.pos;
+                        atkMem.lifeTime = 15;
+                        atkMem.range = true;
+                        atkMem.color = sf::Color::Cyan;
+
+                        attack.memory.push_back(atkMem);
+
+                        // Attack complete
+                        break; // TODO: Remove this if we're doing splash damage instead.
+
+                    }
+                }
+
+
+
+            }
+
 
         }
     }
