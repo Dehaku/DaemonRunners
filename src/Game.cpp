@@ -975,7 +975,8 @@ public:
 
         attackSpeedTimer = 0;
 
-        magSize = 0;
+        magSize = 10;
+        magCurrent = magSize;
         reloadSpeed = 600;
         reloadSpeedTimer = 0;
 
@@ -1903,19 +1904,33 @@ public:
             Weapon &rangeWeapon = player.characterClass.rangeWeapon;
 
 
+            if(inputState.key[Key::R].time == 1 && rangeWeapon.reloadSpeedTimer < 0)
+                rangeWeapon.reloadSpeedTimer = rangeWeapon.reloadSpeed;
 
+            if(rangeWeapon.reloadSpeedTimer == 0)
+            {
+                rangeWeapon.magCurrent = rangeWeapon.magSize;
+            }
+            rangeWeapon.reloadSpeedTimer--;
 
 
             if(rangeWeapon.attackSpeedTimer <= 0 && inputState.lmbTime)
             { // Range
-                rangeWeapon.attackSpeedTimer = rangeWeapon.attackSpeed;
+                if(rangeWeapon.magCurrent > 0 && rangeWeapon.reloadSpeedTimer < 0)
+                {
+                    rangeWeapon.magCurrent--;
+                    rangeWeapon.attackSpeedTimer = rangeWeapon.attackSpeed;
+
+                    Attack attack;
+                    attack.owner = players.back();
+                    attack.attackType = attack.range;
+                    attack.lifeTime = 15;
+                    attackManager.attacks.push_back(attack);
+                }
 
 
-                Attack attack;
-                attack.owner = players.back();
-                attack.attackType = attack.range;
-                attack.lifeTime = 15;
-                attackManager.attacks.push_back(attack);
+
+
 
             }
 
@@ -3904,13 +3919,20 @@ void drawPlayerAttackCooldowns()
 
     float meleeBar = 20*(std::max(meleeWeapon.attackSpeedTimer,0.f)/meleeWeapon.attackSpeed);
     float rangeBar = 20*(std::max(rangeWeapon.attackSpeedTimer,0.f)/rangeWeapon.attackSpeed);
+    float ammoBar = 20*(std::max((float)rangeWeapon.magCurrent,0.f)/rangeWeapon.magSize);
+    float reloadBar = 20*(std::max(rangeWeapon.reloadSpeedTimer,0.f)/rangeWeapon.reloadSpeed);
 
 
     sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
     sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos);
 
+
     shapes.createSquare(worldPos.x+10,worldPos.y+10,worldPos.x+10+5,worldPos.y+10-rangeBar,sf::Color::Red,0,sf::Color::Transparent,&gvars::hudView);
     shapes.createSquare(worldPos.x+17,worldPos.y+10,worldPos.x+17+5,worldPos.y+10-meleeBar,sf::Color::Blue,0,sf::Color::Transparent,&gvars::hudView);
+
+    shapes.createSquare(worldPos.x+24,worldPos.y+10,worldPos.x+24+5,worldPos.y+10-ammoBar,sf::Color::White,0,sf::Color::Transparent,&gvars::hudView);
+    shapes.createSquare(worldPos.x+31,worldPos.y+10,worldPos.x+31+5,worldPos.y+10-reloadBar,sf::Color::Green,0,sf::Color::Transparent,&gvars::hudView);
+
 
 
 }
