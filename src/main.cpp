@@ -92,6 +92,8 @@ void chatPrepper()
 void setup()
 {
 
+    window.setFramerateLimit(120);
+
     chatPrepper();
 
     // Font

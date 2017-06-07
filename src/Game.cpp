@@ -1780,6 +1780,28 @@ public:
 
         meleeWeapon.attackSpeedTimer--;
         rangeWeapon.attackSpeedTimer--;
+
+
+        { // Rotation Code
+           player.rotationPoint = gvars::mousePos;
+
+            int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
+            int rotCheck = rotationDiff;
+            if(rotCheck < 0)
+                rotCheck = -rotCheck;
+
+            if(rotCheck < player.rotationSpeed)
+                player.rotation = math::angleBetweenVectors(player.pos,player.rotationPoint);
+            else
+            {
+                if(rotationDiff > 0)
+                    player.rotation += player.rotationSpeed;
+                if(rotationDiff < 0)
+                    player.rotation -= player.rotationSpeed;
+            }
+        }
+
+
     }
 
     void runPlayerCharacterInput()
@@ -1875,30 +1897,6 @@ public:
 
         }
 
-
-
-
-        { // Rotation Code
-           player.rotationPoint = gvars::mousePos;
-
-            int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
-            int rotCheck = rotationDiff;
-            if(rotCheck < 0)
-                rotCheck = -rotCheck;
-
-            if(rotCheck < player.rotationSpeed)
-                player.rotation = math::angleBetweenVectors(player.pos,player.rotationPoint);
-            else
-            {
-                if(rotationDiff > 0)
-                    player.rotation += player.rotationSpeed;
-                if(rotationDiff < 0)
-                    player.rotation -= player.rotationSpeed;
-            }
-        }
-
-
-
         { // Attack Code
             Weapon &meleeWeapon = player.characterClass.meleeWeapon;
             Weapon &rangeWeapon = player.characterClass.rangeWeapon;
@@ -1987,6 +1985,7 @@ public:
     int pathFinding;
     bool creature;
     bool construct;
+    std::weak_ptr<Player> target;
 
     Enemy()
     {
@@ -1996,10 +1995,98 @@ public:
     }
 };
 
+void runEnemyBrain(Enemy &enemy)
+{
+    // Acquire a target to do things against
+    if(!enemy.target.lock())
+    {
+        int targets = playerManager.players.size();
+        int targetChosen = random(0,targets-1);
+        if(targetChosen < 0)
+            return;
+
+        std::cout << "Targets: " << playerManager.players.size() << ", Chose: " << targetChosen << std::endl;
+
+        int playerCounter = 0;
+        for(auto &player : playerManager.players)
+        {
+            if(playerCounter == targetChosen)
+            {
+                enemy.target = player;
+                break;
+            }
+
+            playerCounter++;
+        }
+    }
+
+
+
+    if(!enemy.target.lock())
+        shapes.createText(enemy.pos.x,enemy.pos.y-10,10,sf::Color::Yellow,"Target: NONE FOUND");
+    else
+        shapes.createText(enemy.pos.x,enemy.pos.y-10,10,sf::Color::Yellow,"Target: " + std::to_string(enemy.target.lock().get()->id) );
+
+    if(!enemy.target.lock())
+        return;
+
+    Player& target = *enemy.target.lock().get();
+
+
+
+    { // Rotation Code
+       enemy.rotationPoint = target.pos;
+
+        int rotationDiff = math::angleDiff(enemy.rotation, math::angleBetweenVectors(enemy.pos,enemy.rotationPoint));
+        int rotCheck = rotationDiff;
+        if(rotCheck < 0)
+            rotCheck = -rotCheck;
+
+        if(rotCheck < enemy.rotationSpeed)
+            enemy.rotation = math::angleBetweenVectors(enemy.pos,enemy.rotationPoint);
+        else
+        {
+            if(rotationDiff > 0)
+                enemy.rotation += enemy.rotationSpeed;
+            if(rotationDiff < 0)
+                enemy.rotation -= enemy.rotationSpeed;
+        }
+    }
+
+
+
+}
+
 class EnemyManager
 {
 public:
     std::list<std::shared_ptr<Enemy>> enemies;
+
+    void runEnemyLogic()
+    {
+        if(enemies.empty())
+            return;
+
+        for(auto &enemyPtr : enemies)
+        {
+            Enemy& enemy = *enemyPtr.get();
+
+
+            Weapon &meleeWeapon = enemy.characterClass.meleeWeapon;
+            Weapon &rangeWeapon = enemy.characterClass.rangeWeapon;
+
+            meleeWeapon.attackSpeedTimer--;
+            rangeWeapon.attackSpeedTimer--;
+
+
+            runEnemyBrain(enemy);
+        }
+
+
+
+
+    }
+
     void makeEnemy(sf::Vector2f spawnPos)
     {
 
@@ -3927,11 +4014,18 @@ void drawPlayerAttackCooldowns()
     sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos);
 
 
-    shapes.createSquare(worldPos.x+10,worldPos.y+10,worldPos.x+10+5,worldPos.y+10-rangeBar,sf::Color::Red,0,sf::Color::Transparent,&gvars::hudView);
-    shapes.createSquare(worldPos.x+17,worldPos.y+10,worldPos.x+17+5,worldPos.y+10-meleeBar,sf::Color::Blue,0,sf::Color::Transparent,&gvars::hudView);
+    if(rangeWeapon.weaponID != Weapon::Nothing)
+    {
+        shapes.createSquare(worldPos.x+10,worldPos.y+10,worldPos.x+10+5,worldPos.y+10-rangeBar,sf::Color::Red,0,sf::Color::Transparent,&gvars::hudView);
 
-    shapes.createSquare(worldPos.x+24,worldPos.y+10,worldPos.x+24+5,worldPos.y+10-ammoBar,sf::Color::White,0,sf::Color::Transparent,&gvars::hudView);
-    shapes.createSquare(worldPos.x+31,worldPos.y+10,worldPos.x+31+5,worldPos.y+10-reloadBar,sf::Color::Green,0,sf::Color::Transparent,&gvars::hudView);
+        shapes.createSquare(worldPos.x+24,worldPos.y+10,worldPos.x+24+5,worldPos.y+10-ammoBar,sf::Color::White,0,sf::Color::Transparent,&gvars::hudView);
+        shapes.createSquare(worldPos.x+31,worldPos.y+10,worldPos.x+31+5,worldPos.y+10-reloadBar,sf::Color::Green,0,sf::Color::Transparent,&gvars::hudView);
+    }
+
+    if(meleeWeapon.weaponID != Weapon::Nothing)
+        shapes.createSquare(worldPos.x+17,worldPos.y+10,worldPos.x+17+5,worldPos.y+10-meleeBar,sf::Color::Blue,0,sf::Color::Transparent,&gvars::hudView);
+
+
 
 
 
@@ -4203,7 +4297,7 @@ void runGame()
     globalCycle++;
 
 
-    // enemyManager.runEnemyLogic();
+    enemyManager.runEnemyLogic();
     playerManager.runPlayerCharacterLogic();
     attackManager.manageAttacks();
 
