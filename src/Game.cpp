@@ -957,7 +957,13 @@ public:
         Baton,
         Knife,
         HolyMace,
-        DivineArts
+        DivineArts,
+        WeakClaws,
+        HeavySmash,
+        WeakMachineGun,
+        WeakSniperRifle,
+        TurretLMG,
+        TurretHMG
     };
 
     Weapon()
@@ -1065,7 +1071,7 @@ public:
             weapon.attackSpeed = 15;
             weapon.attackStun = 20;
 
-            weapon.attackRadius = 1;
+            weapon.attackRadius = 10;
 
             weapon.magSize = 1;
             weapon.reloadSpeed = 0;
@@ -1252,7 +1258,119 @@ public:
         }
         weapon = blankWeapon;
 
+        weapon.name = "Weak Claws";
+        {
+            weapon.weaponID = Weapon::WeakClaws;
+            weapon.melee = true;
 
+            weapon.attackDamage = 10;
+            weapon.attackRange = 24;
+            weapon.attackSpeed = 30;
+            weapon.attackStun = 5;
+
+            weapon.attackRadius = 10;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Heavy Smash";
+        {
+            weapon.weaponID = Weapon::HeavySmash;
+            weapon.melee = true;
+
+            weapon.attackDamage = 50;
+            weapon.attackRange = 32;
+            weapon.attackSpeed = 60;
+            weapon.attackStun = 15;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 0;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Weak Machinegun";
+        {
+            weapon.weaponID = Weapon::WeakMachineGun;
+            weapon.range = true;
+
+            weapon.attackDamage = 10;
+            weapon.attackRange = 160;
+            weapon.attackSpeed = 10;
+            weapon.attackStun = 5;
+
+            weapon.attackRadius = 30;
+
+            weapon.magSize = 30;
+            weapon.reloadSpeed = 320;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Weak Sniper Rifle";
+        {
+            weapon.weaponID = Weapon::WeakSniperRifle;
+            weapon.range = true;
+
+            weapon.attackDamage = 75;
+            weapon.attackRange = 320;
+            weapon.attackSpeed = 120;
+            weapon.attackStun = 60;
+
+            weapon.attackRadius = 0;
+
+            weapon.magSize = 1;
+            weapon.reloadSpeed = 600;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Turret LMG";
+        {
+            weapon.weaponID = Weapon::TurretLMG;
+            weapon.range = true;
+
+            weapon.attackDamage = 10;
+            weapon.attackRange = 640;
+            weapon.attackSpeed = 15;
+            weapon.attackStun = 5;
+
+            weapon.attackRadius = 45;
+
+            weapon.magSize = 100;
+            weapon.reloadSpeed = 600;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
+
+        weapon.name = "Turret HMG";
+        {
+            weapon.weaponID = Weapon::TurretHMG;
+            weapon.range = true;
+
+            weapon.attackDamage = 25;
+            weapon.attackRange = 640;
+            weapon.attackSpeed = 20;
+            weapon.attackStun = 10;
+
+            weapon.attackRadius = 30;
+
+            weapon.magSize = 100;
+            weapon.reloadSpeed = 600;
+
+            weapons.push_back(weapon);
+        }
+        weapon = blankWeapon;
 
     }
 
@@ -1352,6 +1470,7 @@ public:
     std::string name;
     std::string description;
     std::string abilityDescription;
+    bool playable; // Determining if NPC only or not.
     float reviveSpeedMultipler; // Priest
     float constructDamageMultipler; // Engineer
     bool unstoppable; // Enforcer
@@ -1370,6 +1489,7 @@ public:
         name = "No One";
         description = "Unknown";
         abilityDescription = "watt.";
+        playable = false;
         reviveSpeedMultipler = 1;
         constructDamageMultipler = 1;
         unstoppable = false; // Quite stoppable!
@@ -1392,6 +1512,7 @@ public:
     CharacterClassManager()
     {
         CharacterClass classy;
+        classy.playable = true;
 
         classy.name = "Priest";
         classy.description = "Making demons wholly holeyer by his holy self since genesis.";
@@ -1446,6 +1567,64 @@ public:
         classy.meleeWeapon = weaponManager.getWeapon(Weapon::DivineArts);
         classes.push_back(classy);
         classy.focusable = false;
+
+
+
+        // Enemy classes below this point
+        classy.playable = false;
+
+        classy.name = "Enemy Dummy";
+        classy.description = "N/A";
+        classy.abilityDescription = "Great at being punched";
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classes.push_back(classy);
+
+
+        classy.name = "Enemy Light Melee";
+        classy.description = "N/A";
+        classy.abilityDescription = "N/A";
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::WeakClaws);
+        classes.push_back(classy);
+
+        classy.name = "Enemy Heavy Melee";
+        classy.description = "N/A";
+        classy.abilityDescription = "N/A";
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::HeavySmash);
+        classes.push_back(classy);
+
+        classy.name = "Enemy Light Range";
+        classy.description = "N/A";
+        classy.abilityDescription = "N/A";
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::WeakMachineGun);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::WeakClaws);
+        classes.push_back(classy);
+
+        classy.name = "Enemy Heavy Range";
+        classy.description = "N/A";
+        classy.abilityDescription = "N/A";
+        classy.bulletsPierce = true;
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::WeakSniperRifle);
+        classes.push_back(classy);
+        classy.bulletsPierce = false;
+
+        classy.name = "Enemy Light Turret";
+        classy.description = "N/A";
+        classy.abilityDescription = "N/A";
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::TurretLMG);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classes.push_back(classy);
+
+        classy.name = "Enemy Heavy Turret";
+        classy.description = "N/A";
+        classy.abilityDescription = "N/A";
+        classy.rangeWeapon = weaponManager.getWeapon(Weapon::TurretHMG);
+        classy.meleeWeapon = weaponManager.getWeapon(Weapon::Nothing);
+        classes.push_back(classy);
+
 
     }
 };
@@ -1986,6 +2165,7 @@ public:
     bool creature;
     bool construct;
     std::weak_ptr<Player> target;
+    int targetNumber;
 
     Enemy()
     {
@@ -2005,14 +2185,13 @@ void runEnemyBrain(Enemy &enemy)
         if(targetChosen < 0)
             return;
 
-        std::cout << "Targets: " << playerManager.players.size() << ", Chose: " << targetChosen << std::endl;
-
         int playerCounter = 0;
         for(auto &player : playerManager.players)
         {
             if(playerCounter == targetChosen)
             {
                 enemy.target = player;
+                enemy.targetNumber = playerCounter;
                 break;
             }
 
@@ -2025,7 +2204,7 @@ void runEnemyBrain(Enemy &enemy)
     if(!enemy.target.lock())
         shapes.createText(enemy.pos.x,enemy.pos.y-10,10,sf::Color::Yellow,"Target: NONE FOUND");
     else
-        shapes.createText(enemy.pos.x,enemy.pos.y-10,10,sf::Color::Yellow,"Target: " + std::to_string(enemy.target.lock().get()->id) );
+        shapes.createText(enemy.pos.x,enemy.pos.y-10,10,sf::Color::Yellow,"Target: Player " + std::to_string(enemy.targetNumber) + " (" + std::to_string(enemy.target.lock().get()->id) + ")" );
 
     if(!enemy.target.lock())
         return;
