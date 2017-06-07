@@ -1468,6 +1468,7 @@ class CharacterClass
 {
 public:
     std::string name;
+    unsigned int id;
     std::string description;
     std::string abilityDescription;
     bool playable; // Determining if NPC only or not.
@@ -1483,10 +1484,30 @@ public:
     Weapon rangeWeapon;
     Weapon meleeWeapon;
 
+    enum CharacterClassIDs
+    {
+        None,
+        Priest,
+        Engineer,
+        Enforcer,
+        Sniper,
+        Angel,
+        Monk,
+        Custom,
+        EnemyDummy,
+        EnemyLightMelee,
+        EnemyHeavyMelee,
+        EnemyLightRange,
+        EnemyHeavyRange,
+        EnemyLightTurret,
+        EnemyHeavyTurret
+    };
+
 
     CharacterClass()
     {
         name = "No One";
+        id = None;
         description = "Unknown";
         abilityDescription = "watt.";
         playable = false;
@@ -1509,12 +1530,26 @@ class CharacterClassManager
 public:
     std::list<CharacterClass> classes;
 
+    CharacterClass getCharacterClass(unsigned int classID)
+    {
+        for(auto &characterClass : classes)
+        {
+            if(characterClass.id == classID)
+                return characterClass;
+        }
+
+
+        CharacterClass blankClass;
+        return blankClass;
+    }
+
     CharacterClassManager()
     {
         CharacterClass classy;
         classy.playable = true;
 
         classy.name = "Priest";
+        classy.id = classy.Priest;
         classy.description = "Making demons wholly holeyer by his holy self since genesis.";
         classy.abilityDescription = "Revive(4x Revival Speed)";
         classy.reviveSpeedMultipler = 4;
@@ -1524,6 +1559,7 @@ public:
         classy.reviveSpeedMultipler = 1;
 
         classy.name = "Engineer";
+        classy.id = classy.Engineer;
         classy.description = "Raging against the Demonic Machine.";
         classy.abilityDescription = "Deconstruction(Deals double base damage to constructs and buildings)";
         classy.constructDamageMultipler = 2;
@@ -1533,6 +1569,7 @@ public:
         classy.constructDamageMultipler = 1;
 
         classy.name = "Enforcer";
+        classy.id = classy.Enforcer;
         classy.description = "Even demons have to follow the holy law.";
         classy.abilityDescription = "Unstoppable(When health reaches 0, You have 10 seconds before you fall. Can be healed during this time.)";
         classy.unstoppable = true;
@@ -1542,6 +1579,7 @@ public:
         classy.unstoppable = false;
 
         classy.name = "Sniper";
+        classy.id = classy.Sniper;
         classy.description = "It's never a long shot when he's around.";
         classy.abilityDescription = "Piercing Rounds!";
         classy.bulletsPierce = true;
@@ -1551,6 +1589,7 @@ public:
         classy.bulletsPierce = false;
 
         classy.name = "Angel";
+        classy.id = classy.Angel;
         classy.description = "Good has never been better.";
         classy.abilityDescription = "Holy Smite(Deals +100% damage to the forces of evil. Does not apply to constructs or buildings)";
         classy.evilDamageMultipler = 2;
@@ -1560,6 +1599,7 @@ public:
         classy.evilDamageMultipler = 1;
 
         classy.name = "Monk";
+        classy.id = classy.Monk;
         classy.description = "Balance has been achieved.";
         classy.abilityDescription = "Moment of Focus(Every enemy killed grants +5 stacks of Focus)";
         classy.focusable = true;
@@ -1574,6 +1614,7 @@ public:
         classy.playable = false;
 
         classy.name = "Enemy Dummy";
+        classy.id = classy.EnemyDummy;
         classy.description = "N/A";
         classy.abilityDescription = "Great at being punched";
         classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
@@ -1582,6 +1623,7 @@ public:
 
 
         classy.name = "Enemy Light Melee";
+        classy.id = classy.EnemyLightMelee;
         classy.description = "N/A";
         classy.abilityDescription = "N/A";
         classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
@@ -1589,6 +1631,7 @@ public:
         classes.push_back(classy);
 
         classy.name = "Enemy Heavy Melee";
+        classy.id = classy.EnemyHeavyMelee;
         classy.description = "N/A";
         classy.abilityDescription = "N/A";
         classy.rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
@@ -1596,6 +1639,7 @@ public:
         classes.push_back(classy);
 
         classy.name = "Enemy Light Range";
+        classy.id = classy.EnemyLightRange;
         classy.description = "N/A";
         classy.abilityDescription = "N/A";
         classy.rangeWeapon = weaponManager.getWeapon(Weapon::WeakMachineGun);
@@ -1603,6 +1647,7 @@ public:
         classes.push_back(classy);
 
         classy.name = "Enemy Heavy Range";
+        classy.id = classy.EnemyHeavyRange;
         classy.description = "N/A";
         classy.abilityDescription = "N/A";
         classy.bulletsPierce = true;
@@ -1612,6 +1657,7 @@ public:
         classy.bulletsPierce = false;
 
         classy.name = "Enemy Light Turret";
+        classy.id = classy.EnemyLightTurret;
         classy.description = "N/A";
         classy.abilityDescription = "N/A";
         classy.rangeWeapon = weaponManager.getWeapon(Weapon::TurretLMG);
@@ -1619,6 +1665,7 @@ public:
         classes.push_back(classy);
 
         classy.name = "Enemy Heavy Turret";
+        classy.id = classy.EnemyHeavyTurret;
         classy.description = "N/A";
         classy.abilityDescription = "N/A";
         classy.rangeWeapon = weaponManager.getWeapon(Weapon::TurretHMG);
@@ -2240,6 +2287,7 @@ class EnemyManager
 {
 public:
     std::list<std::shared_ptr<Enemy>> enemies;
+    std::list<Enemy> baseEnemies;
 
     void runEnemyLogic()
     {
@@ -2319,7 +2367,103 @@ public:
 
     }
 
+    EnemyManager()
+    {
+        Enemy blankEnemy;
+        Enemy enemy;
 
+        enemy.name = "Light Melee";
+        {
+            enemy.creature = true;
+
+            enemy.moveSpeed = 2;
+            enemy.healthMax = 50;
+            enemy.rotationSpeed = 2;
+
+            enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyLightMelee);
+
+            baseEnemies.push_back(enemy);
+
+        }
+        enemy = blankEnemy;
+
+        enemy.name = "Heavy Melee";
+        {
+            enemy.creature = true;
+
+            enemy.moveSpeed = 0.5;
+            enemy.healthMax = 200;
+            enemy.rotationSpeed = 0.5;
+            enemy.armorReduction = 0.2;
+
+            enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyHeavyMelee);
+
+            baseEnemies.push_back(enemy);
+        }
+        enemy = blankEnemy;
+
+        enemy.name = "Light Range";
+        {
+            enemy.creature = true;
+
+            enemy.moveSpeed = 2;
+            enemy.healthMax = 100;
+            //enemy.rotationSpeed
+            //enemy.armorReduction = 0.2;
+
+            enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyLightRange);
+
+            baseEnemies.push_back(enemy);
+        }
+        enemy = blankEnemy;
+
+        enemy.name = "Heavy Range";
+        {
+            enemy.creature = true;
+
+            enemy.moveSpeed = 1;
+            enemy.healthMax = 50;
+            //enemy.rotationSpeed
+            //enemy.armorReduction = 0.2;
+
+            enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyHeavyRange);
+
+            baseEnemies.push_back(enemy);
+        }
+        enemy = blankEnemy;
+
+        enemy.name = "Light Turret";
+        {
+            enemy.creature = false;
+            enemy.construct = true;
+
+            enemy.moveSpeed = 0;
+            enemy.healthMax = 200;
+            enemy.rotationSpeed = 0.5;
+            enemy.armorReduction = 0.4;
+
+            enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyLightTurret);
+
+            baseEnemies.push_back(enemy);
+        }
+        enemy = blankEnemy;
+
+        enemy.name = "Heavy Turret";
+        {
+            enemy.creature = false;
+            enemy.construct = true;
+
+            enemy.moveSpeed = 0;
+            enemy.healthMax = 500;
+            enemy.rotationSpeed = 0.5;
+            enemy.armorReduction = 0.6;
+
+            enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyHeavyTurret);
+
+            baseEnemies.push_back(enemy);
+        }
+        enemy = blankEnemy;
+    }
 
 };
 EnemyManager enemyManager;
@@ -3563,6 +3707,9 @@ void runnersMenu()
 
         for(auto &classy : characterClassManager.classes)
         {
+            if(!classy.playable)
+                continue;
+
             shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),15,sf::Color::White,classy.name, &gvars::hudView);
 
 
@@ -4234,6 +4381,19 @@ void drawWallInfo()
 
 }
 
+void drawEnemyInfo()
+{
+    for(auto &enemyPtr : enemyManager.enemies)
+    {
+        Enemy &enemy = *enemyPtr.get();
+
+        std::string outPut;
+        outPut.append("Name: " + enemy.name);
+
+        shapes.createText(enemy.pos.x,enemy.pos.y-20,10,sf::Color::Yellow,outPut);
+    }
+}
+
 void renderGame()
 {
 
@@ -4252,6 +4412,8 @@ void renderGame()
 
     if(inputState.key[Key::Tab])
         drawWallInfo();
+
+    drawEnemyInfo();
 
     generalFunctions();
 
