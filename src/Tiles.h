@@ -428,7 +428,8 @@ public:
 class WorldManager
 {
 public:
-    std::list<World> worlds;
+    // std::list<World> worlds;
+    World currentWorld;
     unsigned int globalIDs;
     void generateWorld(unsigned int minSize = 3, int maxSize = 10)
     {
@@ -655,15 +656,14 @@ public:
         world.cacheWalkableTiles();
         std::cout << "Found Walkable Tiles: " << world.walkableTiles.size() << std::endl;
 
-        worlds.push_back(world);
+        // worlds.push_back(world);
+        currentWorld = world;
 
     }
 
     void drawWalkableTiles()
     {
-        if(worlds.empty())
-            return;
-        World &world = worlds.front();
+        World &world = currentWorld;
 
         for(auto &walkable : world.walkableTiles)
         {
@@ -671,58 +671,6 @@ public:
         }
     }
 
-    void drawWorld()
-    {
-        return;
-
-        if(worlds.empty())
-            return;
-        World &world = worlds.front();
-
-        int chunkCount = 0;
-        for(auto &chunk : world.chunks)
-        {
-            chunkCount++;
-            // Chunk Color based on type
-            if(chunk.startingPoint)
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(0,0,100));
-            else if(chunk.bonusChunk)
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(0,100,0));
-            else if(chunk.deadEnd)
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(100,0,0));
-            else
-                shapes.createSquare(chunk.pos.x,chunk.pos.y,chunk.pos.x+1024,chunk.pos.y+1024,sf::Color(100,100,100));
-
-            shapes.shapes.back().offscreenRender = true;
-
-            chunk.drawTiles();
-
-            // Open Path Waypoints
-
-            if(chunk.paths.north)
-                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512-512,20,sf::Color::Blue);
-            shapes.shapes.back().offscreenRender = true;
-            if(chunk.paths.east)
-                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512+512,chunk.pos.y+512,20,sf::Color::Blue);
-            shapes.shapes.back().offscreenRender = true;
-            if(chunk.paths.south)
-                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512,chunk.pos.y+512+512,20,sf::Color::Blue);
-            shapes.shapes.back().offscreenRender = true;
-            if(chunk.paths.west)
-                shapes.createLine(chunk.pos.x+512,chunk.pos.y+512,chunk.pos.x+512-512,chunk.pos.y+512,20,sf::Color::Blue);
-            shapes.shapes.back().offscreenRender = true;
-
-
-            shapes.createText(chunk.pos.x+512,chunk.pos.y+512,50,sf::Color::White,std::to_string(chunkCount));
-            shapes.shapes.back().offscreenRender = true;
-
-        }
-
-
-
-
-
-    }
 
     WorldManager()
     {

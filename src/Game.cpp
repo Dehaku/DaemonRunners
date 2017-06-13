@@ -1201,13 +1201,13 @@ public:
             }
 
 
-            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x+xMovement,player.pos.y) ))
+            if(worldManager.currentWorld.isTileWalkable(sf::Vector2i(player.pos.x+xMovement,player.pos.y) ))
             {
                 player.pos.x += xMovement;
                 player.lastValidPos = player.pos;
             }
 
-            if(!worldManager.worlds.empty() && worldManager.worlds.back().isTileWalkable(sf::Vector2i(player.pos.x,player.pos.y+yMovement) ))
+            if(worldManager.currentWorld.isTileWalkable(sf::Vector2i(player.pos.x,player.pos.y+yMovement) ))
             {
                 player.pos.y += yMovement;
                 player.lastValidPos = player.pos;
@@ -1609,9 +1609,9 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
 
 
         // Wall damage wil lbe done with this line.
-        if((!worldManager.worlds.empty() && !worldManager.worlds.back().isTileWalkable(sf::Vector2i(tracePos) )))
+        if((!worldManager.currentWorld.isTileWalkable(sf::Vector2i(tracePos) )))
         {
-            ChunkTile & tile = worldManager.worlds.back().getTile(sf::Vector2i(tracePos));
+            ChunkTile & tile = worldManager.currentWorld.getTile(sf::Vector2i(tracePos));
 
             float finalDamage = owner.characterClass.rangeWeapon.attackDamage;
 
@@ -1879,7 +1879,7 @@ void AttackManager::manageAttacks()
                 attack.firstFrame = false;
 
 
-                for(auto &chunk : worldManager.worlds.back().chunks)
+                for(auto &chunk : worldManager.currentWorld.chunks)
                 {
                     sf::Vector2i chunkPos(chunk.pos.x/1024,chunk.pos.y/1024);
                     sf::Vector2i checkPos(owner.pos.x/1024,owner.pos.y/1024);
@@ -2716,15 +2716,15 @@ void jobsMenu()
 {
     sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
     sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
-    if(worldManager.worlds.empty())
+    static bool needsWorld = true;
+    if(needsWorld)
     {
+        needsWorld = false;
         worldManager.generateWorld(20,100);
     }
 
-    worldManager.drawWorld();
-
     if(inputState.key[Key::X].time == 1)
-        worldManager.worlds.clear();
+        needsWorld = true;
 
     drawChat();
     drawFPSandData();
@@ -3193,7 +3193,7 @@ void generalFunctions()
 
 
     if(inputState.key[Key::Y].time == 1)
-        worldManager.worlds.back().printWalkables();
+        worldManager.currentWorld.printWalkables();
 
 
 
@@ -3262,10 +3262,8 @@ void generalFunctionsPostRender()
 
 void drawWorld()
 {
-    if(worldManager.worlds.empty())
-        return;
 
-    World &world = worldManager.worlds.back();
+    World &world = worldManager.currentWorld;
 
     static sf::Texture &wallTex = texturemanager.getTexture("GenericWall.png");
     static sf::Texture &floorTex = texturemanager.getTexture("GenericFloor.png");
@@ -3482,7 +3480,7 @@ void drawAttacks()
 
 void drawWallInfo()
 {
-    ChunkTile & tile = worldManager.worlds.back().getTile(sf::Vector2i(gvars::mousePos));
+    ChunkTile & tile = worldManager.currentWorld.getTile(sf::Vector2i(gvars::mousePos));
 
     std::string outPut;
     outPut.append("Health: " + std::to_string(tile.health) + "\n");

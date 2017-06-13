@@ -17,7 +17,7 @@ void PathingController::NodeToXYZ(void *node, int *x, int *y)
 void *PathingController::XYZToNode(int x, int y)
 {
     // TODO: Fix this, It is NOT functional.
-    return (void *)&(worldManager.worlds.back().chunks.back().tiles[x][y]);
+    return (void *)&(worldManager.currentWorld.chunks.back().tiles[x][y]);
 }
 
 int PathingController::Passable(int nx, int ny)
