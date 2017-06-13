@@ -20,6 +20,8 @@
 #include "SaveLoad.h"
 #include "Profile.h"
 #include "Entities.h"
+#include "Tiles.h"
+#include "PathingController.h"
 
 class StateTracker
 {
