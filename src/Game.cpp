@@ -1090,6 +1090,21 @@ class PlayerManager
 public:
     std::list<std::shared_ptr<Player>> players;
 
+    sf::Vector2f getPlayersAveragePos()
+    {
+        sf::Vector2f returnPos;
+
+        for(auto &player : players)
+        {
+            returnPos += player.get()->pos;
+        }
+
+        returnPos.x /= players.size();
+        returnPos.y /= players.size();
+
+        return returnPos;
+    }
+
     void runPlayerCharacterLogic()
     {
         if(players.empty())
@@ -1386,6 +1401,62 @@ void runEnemyBrain(Enemy &enemy)
 
 }
 
+
+int getPlayersLowestChunk()
+{
+    int returnChunk = 99999;
+    int chunkCount = 0;
+    for(auto &chunk : worldManager.currentWorld.chunks)
+    {
+        for(auto &player : playerManager.players)
+        {
+            sf::Vector2i chunkPos(chunk.pos.x/1024,chunk.pos.y/1024);
+            sf::Vector2i checkPos(player.get()->pos.x/1024,player.get()->pos.y/1024);
+            if(checkPos == chunkPos)
+            {
+                if(returnChunk > chunkCount)
+                    returnChunk = chunkCount;
+            }
+        }
+
+
+
+        chunkCount++;
+    }
+
+    if(returnChunk == 99999)
+        return 0;
+
+    return returnChunk;
+
+}
+
+int getPlayersHighestChunk()
+{
+    int returnChunk = 0;
+
+    int chunkCount = 0;
+    for(auto &chunk : worldManager.currentWorld.chunks)
+    {
+        for(auto &player : playerManager.players)
+        {
+            sf::Vector2i chunkPos(chunk.pos.x/1024,chunk.pos.y/1024);
+            sf::Vector2i checkPos(player.get()->pos.x/1024,player.get()->pos.y/1024);
+            if(checkPos == chunkPos)
+            {
+                if(returnChunk < chunkCount)
+                    returnChunk = chunkCount;
+            }
+        }
+
+
+
+        chunkCount++;
+    }
+    return returnChunk;
+}
+
+
 class EnemyManager
 {
 public:
@@ -1428,7 +1499,7 @@ public:
 
     }
 
-    void makeEnemy(sf::Vector2f spawnPos)
+    void makeEnemy(sf::Vector2f spawnPos, int enemyType = -1)
     {
 
         std::shared_ptr<Enemy> enemyPtr(new Enemy());
@@ -1436,11 +1507,12 @@ public:
         // Enemy &enemy = *enemies.back().get();
         Enemy &enemy = *enemyPtr.get();
 
-        int randomEnemy = random(0,baseEnemies.size()-1);
+        if(enemyType == -1)
+            enemyType = random(0,baseEnemies.size()-1);
         int tracker = 0;
         for(auto &baseEnemy : baseEnemies)
         {
-            if(tracker == randomEnemy)
+            if(tracker == enemyType)
                 enemy = baseEnemy;
 
             tracker++;
@@ -1603,6 +1675,22 @@ public:
         Enemy blankEnemy;
         Enemy enemy;
 
+        enemy.name = "Dummy";
+        {
+            enemy.creature = true;
+            enemy.construct = true;
+
+            enemy.imageID = enemyDummy;
+
+            enemy.moveSpeed = 0;
+            enemy.healthMax = 100000;
+            enemy.rotationSpeed = 1;
+
+            baseEnemies.push_back(enemy);
+
+        }
+        enemy = blankEnemy;
+
         enemy.name = "Light Melee";
         {
             enemy.creature = true;
@@ -1705,7 +1793,77 @@ public:
 };
 EnemyManager enemyManager;
 
+void spawnLogic()
+{
+    if(enemyManager.enemies.empty())
+    {
+        for(auto &chunk : worldManager.currentWorld.chunks)
+        {
 
+            for(int i = 0; i != 32; i++)
+                for(int t = 0; t != 32; t++)
+            {
+                if(chunk.tiles[i][t].type == ChunkTile::TURRETHEAVY)
+                {
+                    sf::Vector2f spawnPos = chunk.tiles[i][t].pos;
+                    spawnPos += sf::Vector2f(16,16);
+                    enemyManager.makeEnemy(spawnPos,EnemyManager::turretHeavy);
+                }
+                if(chunk.tiles[i][t].type == ChunkTile::TURRETLIGHT)
+                {
+                    sf::Vector2f spawnPos = chunk.tiles[i][t].pos;
+                    spawnPos += sf::Vector2f(16,16);
+                    enemyManager.makeEnemy(spawnPos,EnemyManager::turretLight);
+                }
+
+                if(chunk.tiles[i][t].type == ChunkTile::TURRETRANDOM)
+                {
+                    sf::Vector2f spawnPos = chunk.tiles[i][t].pos;
+                    spawnPos += sf::Vector2f(16,16);
+                    if(random(1,10) <= 3)
+                        enemyManager.makeEnemy(spawnPos,EnemyManager::turretHeavy);
+                    else
+                        enemyManager.makeEnemy(spawnPos,EnemyManager::turretLight);
+                }
+            }
+
+        }
+    }
+
+    sf::Vector2f squadPos = playerManager.getPlayersAveragePos();
+
+    int lowestChunk = getPlayersLowestChunk();
+    int highestChunk = getPlayersHighestChunk();
+
+    // std::cout << "Lowest/Highest: " << lowestChunk << "/" << highestChunk << std::endl;
+
+    static bool oneSecondPassed = false;
+    { // Tracking Time
+        static sf::Clock oneSecondTimer;
+        if(oneSecondTimer.getElapsedTime().asSeconds() > 1)
+        {
+            oneSecondTimer.restart();
+            oneSecondPassed = true;
+        }
+    }
+
+
+    if(oneSecondPassed)
+    {
+        oneSecondPassed = false;
+        if(enemyManager.enemies.size() > 100)
+            return;
+
+        for(auto &spawnTile : worldManager.currentWorld.spawnTiles)
+        {
+
+        }
+
+
+    }
+
+
+}
 
 sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos, std::list<std::shared_ptr<Enemy>> &enemies)
 {
@@ -2849,7 +3007,11 @@ void jobsMenu()
     }
 
     if(inputState.key[Key::X].time == 1)
+    {
         needsWorld = true;
+        enemyManager.enemies.clear();
+    }
+
 
     drawChat();
     drawFPSandData();
@@ -3583,6 +3745,10 @@ void drawPlayers()
 
     }
 
+    // sf::Vector2f squadPos = playerManager.getPlayersAveragePos();
+    // shapes.createCircle(squadPos.x,squadPos.y,10,sf::Color::Cyan);
+
+
     // Fixing View
     window.setView(oldView);
 }
@@ -3924,6 +4090,7 @@ void runGame()
     globalCycle++;
 
 
+    spawnLogic();
     enemyManager.runEnemyLogic();
     playerManager.runPlayerCharacterLogic();
     attackManager.manageAttacks();
