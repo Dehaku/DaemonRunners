@@ -1854,12 +1854,56 @@ void spawnLogic()
         if(enemyManager.enemies.size() > 100)
             return;
 
-        for(auto &spawnTile : worldManager.currentWorld.spawnTiles)
+        std::vector<ChunkTile*> spawnTiles;
+        for(auto &chunk : worldManager.currentWorld.chunks)
         {
-
+            for(int i = 0; i != 32; i++)
+                for(int t = 0; t != 32; t++)
+            {
+                if(chunk.tiles[i][t].type == ChunkTile::ENEMYSPAWNER)
+                {
+                    spawnTiles.push_back(&chunk.tiles[i][t]);
+                }
+            }
         }
 
+        for(auto &spawnTile : spawnTiles)
+        {
 
+            if(random(1,4) != 1) // Don't want it ALWAYS spewing.
+                continue;
+
+            int randomEnemy = random(1,8);
+            if(randomEnemy > 4)
+            { // Melee Light
+
+                sf::Vector2f spawnPos = spawnTile->pos;
+                spawnPos += sf::Vector2f(16,16);
+                enemyManager.makeEnemy(spawnPos,EnemyManager::meleeLight);
+            }
+            else if(randomEnemy > 2)
+            { // Melee Heavy
+
+                sf::Vector2f spawnPos = spawnTile->pos;
+                spawnPos += sf::Vector2f(16,16);
+                enemyManager.makeEnemy(spawnPos,EnemyManager::meleeHeavy);
+
+            }
+            else if(randomEnemy > 1)
+            { // Range Light
+
+                sf::Vector2f spawnPos = spawnTile->pos;
+                spawnPos += sf::Vector2f(16,16);
+                enemyManager.makeEnemy(spawnPos,EnemyManager::rangeLight);
+
+            }
+            else if(randomEnemy == 1)
+            { // Range Heavy
+                sf::Vector2f spawnPos = spawnTile->pos;
+                spawnPos += sf::Vector2f(16,16);
+                enemyManager.makeEnemy(spawnPos,EnemyManager::rangeHeavy);
+            }
+        }
     }
 
 
@@ -3038,22 +3082,9 @@ void runnersMenu()
     }
 
 
-         static int xMod = 0;
-            static int yMod = 0;
-            std::cout << "X/Y Mod: " << xMod << "/" << yMod << std::endl;
-            if(inputState.key[Key::Up].time == 1 || inputState.key[Key::Up].time >= 15)
-                yMod--;
-            if(inputState.key[Key::Down].time == 1 || inputState.key[Key::Down].time >= 15)
-                yMod++;
-            if(inputState.key[Key::Left].time == 1 || inputState.key[Key::Left].time >= 15)
-                xMod--;
-            if(inputState.key[Key::Right].time == 1 || inputState.key[Key::Right].time >= 15)
-                xMod++;
-
-
     sf::Vector2f HUDPos(-141, 254);
 
-    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+15+yMod,15,sf::Color::White,"Name: " + player.name, &gvars::hudView);
+    shapes.createText(HUDPos.x+60,HUDPos.y+15,15,sf::Color::White,"Name: " + player.name, &gvars::hudView);
     shapes.createText(HUDPos.x+60,HUDPos.y+30,15,sf::Color::White,"Class: " + player.characterClass.name, &gvars::hudView);
     int classButton = shapes.createImageButton(sf::Vector2f(HUDPos.x+60-10,HUDPos.y+30+10),*arrowButton,"",0, &gvars::hudView);
     if(shapes.shapeHovered(classButton))
@@ -3066,8 +3097,8 @@ void runnersMenu()
     }
 
 
-    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+45,15,sf::Color::White,"Range: " + player.characterClass.rangeWeapon.name, &gvars::hudView);
-    shapes.createText(HUDPos.x+60+xMod,HUDPos.y+60,15,sf::Color::White,"Melee: " + player.characterClass.meleeWeapon.name, &gvars::hudView);
+    shapes.createText(HUDPos.x+60,HUDPos.y+45,15,sf::Color::White,"Range: " + player.characterClass.rangeWeapon.name, &gvars::hudView);
+    shapes.createText(HUDPos.x+60,HUDPos.y+60,15,sf::Color::White,"Melee: " + player.characterClass.meleeWeapon.name, &gvars::hudView);
 
 
     int traitOffset = 0;
@@ -3078,7 +3109,7 @@ void runnersMenu()
         else
             shapes.createText(HUDPos.x+60,HUDPos.y+75+(20*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
 
-        sf::Vector2f buttPos(HUDPos.x+50+xMod,HUDPos.y+85+(20*traitOffset));
+        sf::Vector2f buttPos(HUDPos.x+50,HUDPos.y+85+(20*traitOffset));
         int traitButton = shapes.createImageButton(buttPos,*arrowButton,"",0, &gvars::hudView);
 
         if(shapes.shapeHovered(traitButton))

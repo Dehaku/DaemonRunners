@@ -267,17 +267,10 @@ void buildTile(ChunkTile& tile, int tileType);
 
 void buildChallengeChunk(WorldChunk& chunk);
 
-struct SpawnTileTracker
-{
-    WorldChunk * chunk;
-    ChunkTile * tile;
-};
-
 class World
 {
 public:
     std::list<WorldChunk> chunks;
-    std::vector<SpawnTileTracker> spawnTiles;
 
     class WalkableTile
     {
@@ -381,28 +374,6 @@ public:
                 {
                     walkable.pos = sf::Vector2i(chunk.pos.x+(i*32),chunk.pos.y+(t*32));
                     walkableTiles.push_back(walkable);
-                }
-            }
-        }
-
-    }
-
-    void cacheSpawnTiles()
-    {
-        if(chunks.empty())
-            return;
-
-        SpawnTileTracker spawnTile;
-        for(auto &chunk : chunks)
-        {
-            for(int i = 0; i != 32; i++)
-                for(int t = 0; t != 32; t++)
-            {
-                if(chunk.tiles[i][t].type == ChunkTile::ENEMYSPAWNER)
-                {
-                    spawnTile.chunk = &chunk;
-                    spawnTile.tile = &chunk.tiles[i][t];
-                    spawnTiles.push_back(spawnTile);
                 }
             }
         }
@@ -687,8 +658,6 @@ public:
 
         world.cacheWalkableTiles();
         std::cout << "Found Walkable Tiles: " << world.walkableTiles.size() << std::endl;
-        world.cacheSpawnTiles();
-        std::cout << "Found Spawn Tiles: " << world.spawnTiles.size() << std::endl;
 
         // worlds.push_back(world);
         currentWorld = world;
