@@ -3505,6 +3505,22 @@ void drawEnemyInfo()
     }
 }
 
+void drawPathFinder()
+{
+
+    if(inputState.key[Key::Space].time == 1)
+    {
+        std::cout << "Attepting to make a Path. \n";
+        pathCon.storedPath.clear();
+        int result = pathCon.makePath(playerManager.players.back().get()->pos,gvars::mousePos);
+        std::cout << "Result: " << result << ", path size: " << pathCon.storedPath.size() << std::endl;
+
+    }
+
+
+    pathCon.drawStoredPath();
+}
+
 void renderGame()
 {
 
@@ -3523,6 +3539,8 @@ void renderGame()
 
     if(inputState.key[Key::Tab])
         drawWallInfo();
+
+    drawPathFinder();
 
     drawEnemyInfo();
 
