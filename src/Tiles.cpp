@@ -26,6 +26,15 @@ void buildTile(ChunkTile& tile, int tileType)
         tile.resistence = 10;
         tile.workTime = 0;
     }
+
+    else if(tileType == ChunkTile::TURRETLIGHT || tileType == ChunkTile::TURRETHEAVY || tileType == ChunkTile::TURRETRANDOM || tileType == ChunkTile::ENEMYSPAWNER)
+    {
+        tile.type = ChunkTile::FLOOR;
+        tile.walkable = true;
+        tile.health = 0;
+        tile.resistence = 0;
+        tile.workTime = 0;
+    }
 }
 
 void buildChallengeChunk(WorldChunk& chunk)

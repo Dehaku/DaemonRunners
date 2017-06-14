@@ -94,7 +94,11 @@ public:
         FLOOR,
         WEAKFENCE,
         STRONGFENCE,
-        CORE
+        CORE,
+        ENEMYSPAWNER,
+        TURRETLIGHT,
+        TURRETHEAVY,
+        TURRETRANDOM
 
     };
 

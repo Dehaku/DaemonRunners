@@ -780,6 +780,8 @@ public:
     sf::Vector2f pos;
     sf::Vector2f lastValidPos;
 
+    unsigned int imageID;
+
     CharacterClass characterClass;
 
 
@@ -1316,6 +1318,7 @@ public:
 
     Enemy()
     {
+        imageID = 0;
         id = worldManager.globalIDs++;
         creature = true;
         construct = false;
@@ -1389,6 +1392,17 @@ public:
     std::list<std::shared_ptr<Enemy>> enemies;
     std::list<Enemy> baseEnemies;
 
+    enum enemyIDs
+    {
+        enemyDummy,
+        meleeLight,
+        meleeHeavy,
+        rangeLight,
+        rangeHeavy,
+        turretLight,
+        turretHeavy,
+    };
+
     void runEnemyLogic()
     {
         if(enemies.empty())
@@ -1442,12 +1456,67 @@ public:
     {
 
         static sf::Texture& dummyTex = texturemanager.getTexture("Enemy Dummy.png");
+
+        static sf::Texture& meleeLightTex = texturemanager.getTexture("MeleeLight.png");
+        static sf::Texture& meleeHeavyTex = texturemanager.getTexture("MeleeHeavy.png");
+        static sf::Texture& rangeLightTex = texturemanager.getTexture("RangeLight.png");
+        static sf::Texture& rangeHeavyTex = texturemanager.getTexture("RangeHeavy.png");
+        static sf::Texture& turretLightTex = texturemanager.getTexture("TurretLight.png");
+        static sf::Texture& turretHeavyTex = texturemanager.getTexture("TurretHeavy.png");
+
         static sf::Sprite dummySprite;
         if(dummySprite.getTexture() == nullptr)
         {
             dummySprite.setTexture(dummyTex);
             dummySprite.setOrigin(dummyTex.getSize().x/2,dummyTex.getSize().y/2);
             dummySprite.scale(sf::Vector2f(0.5,0.5));
+        }
+
+        static sf::Sprite meleeLightSprite;
+        if(meleeLightSprite.getTexture() == nullptr)
+        {
+            meleeLightSprite.setTexture(meleeLightTex);
+            meleeLightSprite.setOrigin(meleeLightTex.getSize().x/2,meleeLightTex.getSize().y/2);
+            meleeLightSprite.scale(sf::Vector2f(0.5,0.5));
+        }
+        static sf::Sprite meleeHeavySprite;
+        if(meleeHeavySprite.getTexture() == nullptr)
+        {
+            meleeHeavySprite.setTexture(meleeHeavyTex);
+            meleeHeavySprite.setOrigin(meleeHeavyTex.getSize().x/2,meleeHeavyTex.getSize().y/2);
+            meleeHeavySprite.scale(sf::Vector2f(0.5,0.5));
+        }
+
+        static sf::Sprite rangeLightSprite;
+        if(rangeLightSprite.getTexture() == nullptr)
+        {
+            rangeLightSprite.setTexture(rangeLightTex);
+            rangeLightSprite.setOrigin(rangeLightTex.getSize().x/2,rangeLightTex.getSize().y/2);
+            rangeLightSprite.scale(sf::Vector2f(0.5,0.5));
+        }
+
+        static sf::Sprite rangeHeavySprite;
+        if(rangeHeavySprite.getTexture() == nullptr)
+        {
+            rangeHeavySprite.setTexture(rangeHeavyTex);
+            rangeHeavySprite.setOrigin(rangeHeavyTex.getSize().x/2,rangeHeavyTex.getSize().y/2);
+            rangeHeavySprite.scale(sf::Vector2f(0.5,0.5));
+        }
+
+        static sf::Sprite turretLightSprite;
+        if(turretLightSprite.getTexture() == nullptr)
+        {
+            turretLightSprite.setTexture(turretLightTex);
+            turretLightSprite.setOrigin(turretLightTex.getSize().x/2,turretLightTex.getSize().y/2);
+            turretLightSprite.scale(sf::Vector2f(0.5,0.5));
+        }
+
+        static sf::Sprite turretHeavySprite;
+        if(turretHeavySprite.getTexture() == nullptr)
+        {
+            turretHeavySprite.setTexture(turretHeavyTex);
+            turretHeavySprite.setOrigin(turretHeavyTex.getSize().x/2,turretHeavyTex.getSize().y/2);
+            turretHeavySprite.scale(sf::Vector2f(0.5,0.5));
         }
 
 
@@ -1460,9 +1529,59 @@ public:
         {
             Enemy &enemy = *enemyPtr.get();
 
-            dummySprite.setPosition(enemy.pos);
-            dummySprite.setRotation(enemy.rotation+90);
-            window.draw(dummySprite);
+
+
+            if(enemy.imageID == meleeLight)
+            {
+                meleeLightSprite.setPosition(enemy.pos);
+                meleeLightSprite.setRotation(enemy.rotation-90);
+                window.draw(meleeLightSprite);
+            }
+
+            else if(enemy.imageID == meleeHeavy)
+            {
+                meleeHeavySprite.setPosition(enemy.pos);
+                meleeHeavySprite.setRotation(enemy.rotation-90);
+                window.draw(meleeHeavySprite);
+            }
+
+            else if(enemy.imageID == rangeLight)
+            {
+                rangeLightSprite.setPosition(enemy.pos);
+                rangeLightSprite.setRotation(enemy.rotation-90);
+                window.draw(rangeLightSprite);
+            }
+
+            else if(enemy.imageID == rangeHeavy)
+            {
+                rangeHeavySprite.setPosition(enemy.pos);
+                rangeHeavySprite.setRotation(enemy.rotation-90);
+                window.draw(rangeHeavySprite);
+            }
+
+            else if(enemy.imageID == turretLight)
+            {
+                turretLightSprite.setPosition(enemy.pos);
+                turretLightSprite.setRotation(enemy.rotation-90);
+                window.draw(turretLightSprite);
+            }
+
+            else if(enemy.imageID == turretHeavy)
+            {
+                turretHeavySprite.setPosition(enemy.pos);
+                turretHeavySprite.setRotation(enemy.rotation-90);
+                window.draw(turretHeavySprite);
+            }
+
+            else if(enemy.imageID == enemyDummy)
+            {
+                dummySprite.setPosition(enemy.pos);
+                dummySprite.setRotation(enemy.rotation-90);
+                window.draw(dummySprite);
+            }
+
+
+
 
 
             std::string staminaString;
@@ -1487,6 +1606,7 @@ public:
         enemy.name = "Light Melee";
         {
             enemy.creature = true;
+            enemy.imageID = meleeLight;
 
             enemy.moveSpeed = 2;
             enemy.healthMax = 50;
@@ -1502,6 +1622,7 @@ public:
         enemy.name = "Heavy Melee";
         {
             enemy.creature = true;
+            enemy.imageID = meleeHeavy;
 
             enemy.moveSpeed = 0.5;
             enemy.healthMax = 200;
@@ -1517,6 +1638,7 @@ public:
         enemy.name = "Light Range";
         {
             enemy.creature = true;
+            enemy.imageID = rangeLight;
 
             enemy.moveSpeed = 2;
             enemy.healthMax = 100;
@@ -1532,6 +1654,7 @@ public:
         enemy.name = "Heavy Range";
         {
             enemy.creature = true;
+            enemy.imageID = rangeHeavy;
 
             enemy.moveSpeed = 1;
             enemy.healthMax = 50;
@@ -1548,6 +1671,7 @@ public:
         {
             enemy.creature = false;
             enemy.construct = true;
+            enemy.imageID = turretLight;
 
             enemy.moveSpeed = 0;
             enemy.healthMax = 200;
@@ -1564,6 +1688,7 @@ public:
         {
             enemy.creature = false;
             enemy.construct = true;
+            enemy.imageID = turretHeavy;
 
             enemy.moveSpeed = 0;
             enemy.healthMax = 500;
@@ -3410,7 +3535,7 @@ void drawPlayers()
     {
         Player &player = *playerPtr.get();
         angelSprite.setPosition(player.pos);
-        angelSprite.setRotation(player.rotation+90);
+        angelSprite.setRotation(player.rotation-90);
         window.draw(angelSprite);
 
 
