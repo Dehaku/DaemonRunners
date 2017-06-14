@@ -26,10 +26,18 @@ void buildTile(ChunkTile& tile, int tileType)
         tile.resistence = 10;
         tile.workTime = 0;
     }
+    else if(tileType == ChunkTile::CORE)
+    {
+        tile.type = ChunkTile::CORE;
+        tile.walkable = false;
+        tile.health = 250;
+        tile.resistence = 25;
+        tile.workTime = 0;
+    }
 
     else if(tileType == ChunkTile::TURRETLIGHT || tileType == ChunkTile::TURRETHEAVY || tileType == ChunkTile::TURRETRANDOM || tileType == ChunkTile::ENEMYSPAWNER)
     {
-        tile.type = ChunkTile::FLOOR;
+        tile.type = tileType;
         tile.walkable = true;
         tile.health = 0;
         tile.resistence = 0;
@@ -65,6 +73,13 @@ void buildChallengeChunk(WorldChunk& chunk)
                 buildTile(chunk.tiles[i][t], ChunkTile::WEAKFENCE);
             }
         }
+
+        buildTile(chunk.tiles[4][4], ChunkTile::TURRETLIGHT);
+        buildTile(chunk.tiles[4][27], ChunkTile::TURRETLIGHT);
+        buildTile(chunk.tiles[27][4], ChunkTile::TURRETLIGHT);
+        buildTile(chunk.tiles[27][27], ChunkTile::TURRETLIGHT);
+
+
     }
     if(challengeType == 2)
     {
@@ -101,6 +116,11 @@ void buildChallengeChunk(WorldChunk& chunk)
             buildTile(chunk.tiles[16][15], ChunkTile::WEAKFENCE);
             buildTile(chunk.tiles[16][16], ChunkTile::WEAKFENCE);
         }
+
+        buildTile(chunk.tiles[13][17], ChunkTile::TURRETRANDOM);
+        buildTile(chunk.tiles[18][14], ChunkTile::TURRETRANDOM);
+        buildTile(chunk.tiles[18][17], ChunkTile::TURRETRANDOM);
+        buildTile(chunk.tiles[13][14], ChunkTile::TURRETRANDOM);
     }
 
 
@@ -192,6 +212,24 @@ void WorldChunk::generateTiles()
             buildChallengeChunk(*this);
     }
 
+
+    buildTile(tiles[13][18], ChunkTile::ENEMYSPAWNER);
+    buildTile(tiles[13][13], ChunkTile::ENEMYSPAWNER);
+    buildTile(tiles[18][13], ChunkTile::ENEMYSPAWNER);
+    buildTile(tiles[18][18], ChunkTile::ENEMYSPAWNER);
+
+    if(deadEnd)
+    {
+        buildTile(tiles[15][15], ChunkTile::CORE);
+        buildTile(tiles[15][16], ChunkTile::CORE);
+        buildTile(tiles[16][15], ChunkTile::CORE);
+        buildTile(tiles[16][16], ChunkTile::CORE);
+
+        buildTile(tiles[14][14], ChunkTile::TURRETHEAVY);
+        buildTile(tiles[14][17], ChunkTile::TURRETHEAVY);
+        buildTile(tiles[17][14], ChunkTile::TURRETHEAVY);
+        buildTile(tiles[17][17], ChunkTile::TURRETHEAVY);
+    }
 
 
 

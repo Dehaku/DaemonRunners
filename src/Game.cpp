@@ -3447,8 +3447,6 @@ void drawWorld()
                 wallSprite.setPosition(drawPos);
                 wallSprite.setColor(chunkColor);
                 window.draw(wallSprite);
-                //shapes.createImageButton(drawPos,wallTex);
-                //shapes.shapes.back().maincolor = chunkColor;
             }
 
 
@@ -3465,6 +3463,40 @@ void drawWorld()
                 weakfenceSprite.setPosition(drawPos);
                 weakfenceSprite.setColor(chunkColor);
                 window.draw(weakfenceSprite);
+            }
+
+            if(chunk.tiles[i][t].type == ChunkTile::CORE)
+            {
+                wallSprite.setPosition(drawPos);
+                wallSprite.setColor(sf::Color::Red);
+                window.draw(wallSprite);
+            }
+
+            if(chunk.tiles[i][t].type == ChunkTile::ENEMYSPAWNER)
+            {
+                floorSprite.setPosition(drawPos);
+                floorSprite.setColor(sf::Color::Green);
+                window.draw(floorSprite);
+            }
+
+            if(chunk.tiles[i][t].type == ChunkTile::TURRETLIGHT)
+            {
+                floorSprite.setPosition(drawPos);
+                floorSprite.setColor(sf::Color(255,255,0));
+                window.draw(floorSprite);
+            }
+            if(chunk.tiles[i][t].type == ChunkTile::TURRETHEAVY)
+            {
+                floorSprite.setPosition(drawPos);
+                floorSprite.setColor(sf::Color(100,100,0));
+                window.draw(floorSprite);
+            }
+
+            if(chunk.tiles[i][t].type == ChunkTile::TURRETRANDOM)
+            {
+                floorSprite.setPosition(drawPos);
+                floorSprite.setColor(sf::Color(150,0,150));
+                window.draw(floorSprite);
             }
 
         }
@@ -3521,7 +3553,7 @@ void drawPlayers()
     if(angelSprite.getTexture() == nullptr)
     {
         angelSprite.setTexture(angelTex);
-        angelSprite.scale(sf::Vector2f(0.5,0.5));
+         angelSprite.scale(sf::Vector2f(0.5,0.5));
         angelSprite.setOrigin(angelTex.getSize().x/2,angelTex.getSize().y/2);
     }
 
