@@ -131,6 +131,10 @@ public:
 class WorldChunk
 {
 public:
+    sf::Texture chunkTexture;
+    sf::Image chunkImage;
+    bool chunkChanged;
+
     sf::Vector2i pos;
     ChunkTile tiles[32][32];
     Directions paths;
@@ -139,6 +143,8 @@ public:
     bool bonusChunk;
 
 
+
+    void buildChunkImage();
 
     void generateTiles();
 
@@ -256,10 +262,11 @@ public:
 
     WorldChunk()
     {
+        chunkChanged = false;
+
         startingPoint = false;
         deadEnd = false;
         bonusChunk = false;
-
     }
 };
 

@@ -3210,6 +3210,10 @@ void jobsMenu()
         needsWorld = false;
         worldManager.generateWorld(20,100);
         spawnControlManager.setupSpawners();
+
+        std::cout << "Building Chunk Images \n";
+        for(auto &chunk : worldManager.currentWorld.chunks)
+            chunk.buildChunkImage();
     }
 
     if(inputState.key[Key::X].time == 1)
@@ -3741,8 +3745,80 @@ void generalFunctionsPostRender()
     */
 }
 
+void WorldChunk::buildChunkImage()
+{
+    static sf::Texture &wallTex = texturemanager.getTexture("GenericWall.png");
+    static sf::Texture &floorTex = texturemanager.getTexture("GenericFloor.png");
+
+    static sf::Texture &turretTex = texturemanager.getTexture("GenericTurretPlatform.png");
+    static sf::Texture &coreTex = texturemanager.getTexture("GenericCore.png");
+    static sf::Texture &spawnTex = texturemanager.getTexture("GenericSpawn.png");
+
+    static sf::Texture &weakfenceTex = texturemanager.getTexture("GenericWeakFence.png");
+
+    chunkImage.create(32*32,32*32,sf::Color::Transparent);
+
+
+    for(int i = 0; i != 32; i++)
+        for(int t = 0; t != 32; t++)
+    {
+        sf::Vector2f drawPos((i*32),(t*32));
+
+        if(tiles[i][t].type == ChunkTile::WALL)
+        {
+            chunkImage.copy(wallTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::FLOOR)
+        {
+            chunkImage.copy(floorTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::WEAKFENCE)
+        {
+            chunkImage.copy(weakfenceTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::CORE)
+        {
+            chunkImage.copy(coreTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::ENEMYSPAWNER)
+        {
+            chunkImage.copy(spawnTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::TURRETLIGHT)
+        {
+            chunkImage.copy(turretTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+        if(tiles[i][t].type == ChunkTile::TURRETHEAVY)
+        {
+            chunkImage.copy(turretTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::TURRETRANDOM)
+        {
+            chunkImage.copy(turretTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+    }
+
+    chunkTexture.loadFromImage(chunkImage);
+}
+
 void drawWorld()
 {
+    sf::Clock drawTimer;
+    drawTimer.restart();
+
+
+
+
+
+
+
 
     World &world = worldManager.currentWorld;
 
@@ -3789,6 +3865,11 @@ void drawWorld()
             chunkColor = sf::Color(200,200,250);
         if(chunk.bonusChunk)
             chunkColor = sf::Color(200,250,200);
+
+        if(inputState.key[Key::Comma])
+        {
+
+
 
         for(int i = 0; i != 32; i++)
             for(int t = 0; t != 32; t++)
@@ -3857,6 +3938,16 @@ void drawWorld()
 
         }
 
+        }
+
+        else
+        {
+            sf::Sprite chunkSprite;
+            chunkSprite.setTexture(chunk.chunkTexture);
+            chunkSprite.setPosition(sf::Vector2f(chunk.pos));
+
+            window.draw(chunkSprite);
+        }
 
         if(chunk.paths.north)
         {
@@ -3899,6 +3990,20 @@ void drawWorld()
     }
 
     window.setView(oldView);
+
+
+
+
+
+
+
+
+
+
+
+    int drawTime = drawTimer.getElapsedTime().asMicroseconds();
+    if(inputState.key[Key::F1])
+        std::cout << "Draw Time: " << drawTime << std::endl;
 
 }
 
