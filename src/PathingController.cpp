@@ -120,10 +120,11 @@ void PathingController::storeRPath(void *node)
 
 int PathingController::makePath(sf::Vector2f Ori, sf::Vector2f Tar)
 {
+    storedPath.clear();
     int result = 0;
     if (Passable(Tar.x, Tar.y) == 1)
     {
-        std::cout << "Target is Walkable \n";
+        // std::cout << "Target is Walkable \n";
         float totalCost;
 
         result = pather->Solve(XYZToNode(Ori.x, Ori.y),
@@ -132,7 +133,7 @@ int PathingController::makePath(sf::Vector2f Ori, sf::Vector2f Tar)
 
         if (result == MicroPather::SOLVED)
         {
-            std::cout << "Path Found! \n";
+            // std::cout << "Path Found! \n";
             unsigned int pathSize = microPath.size();
             for (int i = 0; i != pathSize; i++)
             {
@@ -141,7 +142,7 @@ int PathingController::makePath(sf::Vector2f Ori, sf::Vector2f Tar)
         }
         else
         {
-            std::cout << "Unable to find path, report: " << result << ", size: " << microPath.size() << std::endl;
+            // std::cout << "Unable to find path, report: " << result << ", size: " << microPath.size() << std::endl;
         }
     }
     return result;

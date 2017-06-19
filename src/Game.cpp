@@ -515,7 +515,7 @@ public:
         baseTraits.push_back(trait);
 
         trait.name = "Quick Renewal";
-        trait.description = "(4) Reload and Recharge spells in half the time";
+        trait.description = "(4) Reload and Recharge spells 100% faster";
         trait.traitID = Trait::QuickRenewal;
         trait.stackable = 4;
         baseTraits.push_back(trait);
@@ -1366,10 +1366,13 @@ void runEnemyBrain(Enemy &enemy)
 
 
 
+    /*
     if(!enemy.target.lock())
         shapes.createText(enemy.pos.x,enemy.pos.y-10,10,sf::Color::Yellow,"Target: NONE FOUND");
     else
         shapes.createText(enemy.pos.x,enemy.pos.y-10,10,sf::Color::Yellow,"Target: Player " + std::to_string(enemy.targetNumber) + " (" + std::to_string(enemy.target.lock().get()->id) + ")" );
+
+        */
 
     if(!enemy.target.lock())
         return;
@@ -1456,6 +1459,25 @@ int getPlayersHighestChunk()
     return returnChunk;
 }
 
+sf::Vector2f getSquadOrRandomPlayerPos()
+{
+    sf::Vector2f returnPos;
+    returnPos = playerManager.getPlayersAveragePos();
+    if(worldManager.currentWorld.isTileWalkable(sf::Vector2i(returnPos.x,returnPos.y)))
+        return returnPos;
+
+    int randomPlayer = random(0,playerManager.players.size()-1);
+    int tracker = 0;
+    for(auto &player : playerManager.players)
+    {
+        if(tracker == randomPlayer)
+            returnPos = player.get()->pos;
+        tracker++;
+    }
+
+
+    return returnPos;
+}
 
 class EnemyManager
 {
@@ -1793,6 +1815,137 @@ public:
 };
 EnemyManager enemyManager;
 
+class SpawnController
+{
+public:
+    sf::Vector2f pos;
+    bool targetPathed;
+    std::vector<ChunkTile*> storedPath;
+
+    SpawnController()
+    {
+        targetPathed = false;
+    }
+};
+
+class SpawnControllerManager
+{
+public:
+    std::list<SpawnController> spawnControllers;
+    bool allowUpdates;
+    int lastUpdated;
+
+
+    void updateSpawnerPathsIncrementally()
+    {
+        if(!allowUpdates)
+            return;
+
+        static bool oneSecondPassed = false;
+        {
+            static sf::Clock oneSecondTimer;
+            if(oneSecondTimer.getElapsedTime().asSeconds() > 1)
+            {
+                oneSecondTimer.restart();
+                oneSecondPassed = true;
+            }
+        }
+
+
+        if(oneSecondPassed)
+        {
+            oneSecondPassed = false;
+
+            bool doneUpdating = false;
+
+            while(!doneUpdating)
+            {
+                int subTracker = 0;
+                for(auto &spawn : spawnControllers)
+                {
+                    if(subTracker >= spawnControllers.size()-1) // Start over.
+                            lastUpdated = -1;
+
+                    if(subTracker > lastUpdated && spawn.targetPathed)
+                    {
+                        std::cout << subTracker << std::endl;
+                        lastUpdated = subTracker;
+
+
+
+                        sf::Vector2f squadPos = getSquadOrRandomPlayerPos();
+                        int results = pathCon.makePath(spawn.pos,squadPos);
+                        if(results == 0) // 0 == solved.
+                        {
+                            spawn.storedPath = pathCon.storedPath;
+                            doneUpdating = true;
+                            break;
+                        }
+
+                    }
+
+                    subTracker++;
+                }
+            }
+
+        }
+    }
+
+    void setupSpawners()
+    {
+        for(auto &chunk : worldManager.currentWorld.chunks)
+        {
+            for(int i = 0; i != 32; i++)
+                for(int t = 0; t != 32; t++)
+            {
+                if(chunk.tiles[i][t].type == ChunkTile::ENEMYSPAWNER)
+                {
+                    SpawnController spawnCon;
+                    spawnCon.pos = chunk.tiles[i][t].pos;
+                    spawnCon.pos.x += 16;
+                    spawnCon.pos.y += 16;
+
+                    spawnControllers.push_back(spawnCon);
+                }
+            }
+        }
+    }
+
+    void pathSpawners()
+    {
+        sf::Vector2f squadPos = getSquadOrRandomPlayerPos();
+
+        int spawnsValid = 0;
+        int spawnsInvalid = 0;
+
+        for(auto &spawnCon : spawnControllers)
+        {
+
+            int results = pathCon.makePath(spawnCon.pos,squadPos);
+            if(results == 0) // 0 == solved.
+            {
+                spawnCon.targetPathed = true;
+                spawnCon.storedPath = pathCon.storedPath;
+
+                allowUpdates = true;
+                spawnsValid++;
+            }
+            else
+                spawnsInvalid++;
+        }
+
+        std::cout << "Spawns: " << spawnsValid << "/" << spawnsInvalid << std::endl;
+    }
+
+    SpawnControllerManager()
+    {
+        lastUpdated = -1;
+        allowUpdates = false;
+    }
+
+};
+SpawnControllerManager spawnControlManager;
+
 void spawnLogic()
 {
     if(enemyManager.enemies.empty())
@@ -1848,9 +2001,17 @@ void spawnLogic()
     }
 
 
+    if(inputState.key[Key::BackSpace].time == 1)
+        spawnControlManager.pathSpawners();
+
     if(oneSecondPassed)
     {
         oneSecondPassed = false;
+
+        if(playerManager.players.size() > 0)
+            spawnControlManager.updateSpawnerPathsIncrementally();
+
+
         if(enemyManager.enemies.size() > 100)
             return;
 
@@ -3048,12 +3209,14 @@ void jobsMenu()
     {
         needsWorld = false;
         worldManager.generateWorld(20,100);
+        spawnControlManager.setupSpawners();
     }
 
     if(inputState.key[Key::X].time == 1)
     {
         needsWorld = true;
         enemyManager.enemies.clear();
+        spawnControlManager.spawnControllers.clear();
     }
 
 
@@ -3872,7 +4035,46 @@ void drawPathFinder()
     }
 
 
-    pathCon.drawStoredPath();
+    if(inputState.key[Key::T])
+    {
+        pathCon.drawStoredPath();
+
+        for(auto &spawn : spawnControlManager.spawnControllers)
+        {
+            if(spawn.targetPathed)
+            {
+
+                // std::cout << "Drawing path! Size: " << spawn.storedPath.size() << std::endl;
+
+
+                sf::Vector2f oldPos;
+                bool firstRun = true;
+
+                for (auto &i : spawn.storedPath)
+                {
+                    sf::Vector2f pathPos;
+                    pathPos = i->pos;
+                    sf::Color pathColor(255, 0, 0, 255);
+
+                    if (!firstRun)
+                        shapes.createLine((oldPos.x + 32) - (32/2),
+                                          (oldPos.y + 32) - (32/2),
+                                          (pathPos.x + 32) - (32/2),
+                                          (pathPos.y + 32) - (32/2), 5, pathColor);
+
+                    oldPos = pathPos;
+                    firstRun = false;
+                }
+
+
+
+
+
+
+            }
+        }
+    }
+
 }
 
 void renderGame()
