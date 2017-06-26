@@ -2295,6 +2295,8 @@ void spawnLogic()
 
 }
 
+
+
 sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos, std::list<std::shared_ptr<Enemy>> &enemies)
 {
     std::list<std::weak_ptr<Enemy>> enemiesFound;
@@ -2324,22 +2326,26 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
         // Wall damage will be done with this line.
         if((!worldManager.currentWorld.isTileWalkable(sf::Vector2i(tracePos) )))
         {
-            ChunkTile & tile = worldManager.currentWorld.getTile(sf::Vector2i(tracePos));
-
-            float finalDamage = owner.characterClass.rangeWeapon.attackDamage;
-
-            finalDamage *= owner.getConstructDamageMultiplier();
-
-            bool tileDestroyed = tile.affectHealth(finalDamage);
-
-            if(tileDestroyed)
-            {
-                WorldChunk & chunk = worldManager.currentWorld.getChunk(sf::Vector2i(tracePos));
-                chunk.buildChunkImage();
-            }
 
             done = true;
             returnPos = tracePos;
+
+            ChunkTile & tile = worldManager.currentWorld.getTile(sf::Vector2i(tracePos));
+
+            if(tile.health > 0)
+            {
+                float finalDamage = owner.characterClass.rangeWeapon.attackDamage;
+
+                finalDamage *= owner.getConstructDamageMultiplier();
+
+                bool tileDestroyed = tile.affectHealth(finalDamage);
+
+                if(tileDestroyed)
+                {
+                    WorldChunk & chunk = worldManager.currentWorld.getChunk(sf::Vector2i(tracePos));
+                    chunk.updateChunkImage(chunk.convertWorldCordtoChunkTilePos(sf::Vector2i(tracePos)));
+                }
+            }
         }
 
         for(auto &enemyPtr : enemies)
@@ -2645,7 +2651,7 @@ void AttackManager::manageAttacks()
                                 bool tileDestroyed = tile.affectHealth(finalDamage);
 
                                 if(tileDestroyed)
-                                    chunk.buildChunkImage();
+                                    chunk.updateChunkImage(sf::Vector2i(x*32,y*32));
 
                             }
                         }
@@ -4024,6 +4030,71 @@ void generalFunctionsPostRender()
     }
     */
 }
+
+void WorldChunk::updateChunkImage(sf::Vector2i updatePos)
+{
+    static sf::Texture &wallTex = texturemanager.getTexture("GenericWall.png");
+    static sf::Texture &floorTex = texturemanager.getTexture("GenericFloor.png");
+
+    static sf::Texture &turretTex = texturemanager.getTexture("GenericTurretPlatform.png");
+    static sf::Texture &coreTex = texturemanager.getTexture("GenericCore.png");
+    static sf::Texture &spawnTex = texturemanager.getTexture("GenericSpawn.png");
+
+    static sf::Texture &weakfenceTex = texturemanager.getTexture("GenericWeakFence.png");
+
+
+    for(int i = 0; i != 32; i++)
+        for(int t = 0; t != 32; t++)
+    {
+        sf::Vector2i drawPos((i*32),(t*32));
+
+        if(drawPos != updatePos)
+            continue;
+
+        if(tiles[i][t].type == ChunkTile::WALL)
+        {
+            chunkImage.copy(wallTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::FLOOR)
+        {
+            chunkImage.copy(floorTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::WEAKFENCE)
+        {
+            chunkImage.copy(weakfenceTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::CORE)
+        {
+            chunkImage.copy(coreTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::ENEMYSPAWNER)
+        {
+            chunkImage.copy(spawnTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::TURRETLIGHT)
+        {
+            chunkImage.copy(turretTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+        if(tiles[i][t].type == ChunkTile::TURRETHEAVY)
+        {
+            chunkImage.copy(turretTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+        if(tiles[i][t].type == ChunkTile::TURRETRANDOM)
+        {
+            chunkImage.copy(turretTex.copyToImage(),drawPos.x,drawPos.y);
+        }
+
+    }
+
+    chunkTexture.loadFromImage(chunkImage);
+}
+
 
 void WorldChunk::buildChunkImage()
 {

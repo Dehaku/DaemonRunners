@@ -147,7 +147,20 @@ public:
 
 
 
+    void updateChunkImage(sf::Vector2i updatePos);
     void buildChunkImage();
+
+    sf::Vector2i convertWorldCordtoChunkTilePos(sf::Vector2i convPos)
+    {
+        sf::Vector2i returnPos = convPos - pos;
+        returnPos.x /= 32;
+        returnPos.y /= 32;
+        returnPos.x *= 32;
+        returnPos.y *= 32;
+
+        return returnPos;
+    }
+
 
     void generateTiles();
 
