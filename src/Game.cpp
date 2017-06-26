@@ -1442,9 +1442,16 @@ void runEnemyBrain(Enemy &enemy)
         sf::Vector2f desiredPosition;
         bool positionSet = false;
 
+        int longestRange = 600;
+        if(longestRange < enemy.characterClass.meleeWeapon.attackRange)
+            longestRange = enemy.characterClass.meleeWeapon.attackRange;
+        if(longestRange < enemy.characterClass.rangeWeapon.attackRange)
+            longestRange = enemy.characterClass.rangeWeapon.attackRange;
+
+
 
         enemy.lastVisionCheck--;
-        if(enemy.followingVision)
+        if(true == false && enemy.followingVision)
         {
             desiredPosition = enemy.lastVisionPos;
             positionSet = true;
@@ -1464,8 +1471,10 @@ void runEnemyBrain(Enemy &enemy)
                 enemy.lastVisionCheck = 60;
             }
         }
-        else if(enemy.target.lock() && visionCheck(enemy.pos,enemy.target.lock().get()->pos))
+
+        if(enemy.target.lock() && math::distance(enemy.pos,enemy.target.lock().get()->pos) <= longestRange && visionCheck(enemy.pos,enemy.target.lock().get()->pos))
         {
+
             enemy.lastVisionCheck = 60;
             enemy.lastVisionPos = enemy.target.lock().get()->pos;
             enemy.followingVision = true;
@@ -1594,6 +1603,15 @@ public:
         turretHeavy,
     };
 
+    int getLivingEnemyCount()
+    {
+        int returnValue = 0;
+        for(auto &enemy : enemies)
+            if(enemy.get()->health > 0)
+                returnValue++;
+        return returnValue;
+    }
+
     void runEnemyLogic()
     {
         if(enemies.empty())
@@ -1602,6 +1620,9 @@ public:
         for(auto &enemyPtr : enemies)
         {
             Enemy& enemy = *enemyPtr.get();
+
+            if(enemy.health <= 0)
+                continue;
 
 
             Weapon &meleeWeapon = enemy.characterClass.meleeWeapon;
@@ -1776,6 +1797,8 @@ public:
 
 
 
+            /*
+
             std::string staminaString;
             staminaString.append(std::to_string( (int) enemy.health) );
             staminaString.append("/");
@@ -1783,6 +1806,9 @@ public:
 
 
             shapes.createText(enemy.pos.x,enemy.pos.y+25,10,sf::Color::Red,staminaString);
+
+            */
+
         }
 
         // Fixing View
@@ -2110,7 +2136,8 @@ void spawnLogic()
             spawnControlManager.updateSpawnerPathsIncrementally();
 
 
-        if(enemyManager.enemies.size() > 100)
+
+        if(enemyManager.getLivingEnemyCount() > 100)
             return;
 
         std::vector<ChunkTile*> spawnTiles;
@@ -4262,10 +4289,7 @@ void drawEnemyInfo()
     {
         Enemy &enemy = *enemyPtr.get();
 
-        std::string outPut;
-        outPut.append("Name: " + enemy.name);
 
-        shapes.createText(enemy.pos.x,enemy.pos.y-20,10,sf::Color::Yellow,outPut);
     }
 }
 
