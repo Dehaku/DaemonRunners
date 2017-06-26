@@ -814,8 +814,17 @@ public:
     float rotationSpeed;
     sf::Vector2f rotationPoint;
 
+    bool alive;
     float health;
     float healthMax;
+    bool affectHealth(float amount)
+    {
+        health -= amount;
+        if(health <= 0)
+            return true;
+
+        return false;
+    }
     float armorReduction;
     float getArmorReduction()
     {
@@ -1001,6 +1010,7 @@ public:
         id = worldManager.globalIDs++;
         staminaRegen = 1;
 
+        alive = true;
         healthMax = 100;
         health = healthMax;
         staminaMax = 1000;
@@ -1590,6 +1600,7 @@ class EnemyManager
 {
 public:
     std::list<std::shared_ptr<Enemy>> enemies;
+    std::list<std::shared_ptr<Enemy>> deadEnemies;
     std::list<Enemy> baseEnemies;
 
     enum enemyIDs
@@ -1738,6 +1749,85 @@ public:
         window.setView(gvars::view1);
 
         // Render stuffs
+        for(auto &enemyPtr : deadEnemies)
+        {
+            Enemy &enemy = *enemyPtr.get();
+
+            // Make 'em darker so they're easier to differentiate;
+            {
+                meleeLightSprite.setColor(sf::Color(50,50,50));
+                meleeHeavySprite.setColor(sf::Color(50,50,50));
+                rangeLightSprite.setColor(sf::Color(50,50,50));
+                rangeHeavySprite.setColor(sf::Color(50,50,50));
+                turretLightSprite.setColor(sf::Color(50,50,50));
+                turretHeavySprite.setColor(sf::Color(50,50,50));
+            }
+
+
+
+
+            if(enemy.imageID == meleeLight)
+            {
+                meleeLightSprite.setPosition(enemy.pos);
+                meleeLightSprite.setRotation(enemy.rotation-90);
+                window.draw(meleeLightSprite);
+            }
+
+            else if(enemy.imageID == meleeHeavy)
+            {
+                meleeHeavySprite.setPosition(enemy.pos);
+                meleeHeavySprite.setRotation(enemy.rotation-90);
+                window.draw(meleeHeavySprite);
+            }
+
+            else if(enemy.imageID == rangeLight)
+            {
+                rangeLightSprite.setPosition(enemy.pos);
+                rangeLightSprite.setRotation(enemy.rotation-90);
+                window.draw(rangeLightSprite);
+            }
+
+            else if(enemy.imageID == rangeHeavy)
+            {
+                rangeHeavySprite.setPosition(enemy.pos);
+                rangeHeavySprite.setRotation(enemy.rotation-90);
+                window.draw(rangeHeavySprite);
+            }
+
+            else if(enemy.imageID == turretLight)
+            {
+                turretLightSprite.setPosition(enemy.pos);
+                turretLightSprite.setRotation(enemy.rotation-90);
+                window.draw(turretLightSprite);
+            }
+
+            else if(enemy.imageID == turretHeavy)
+            {
+                turretHeavySprite.setPosition(enemy.pos);
+                turretHeavySprite.setRotation(enemy.rotation-90);
+                window.draw(turretHeavySprite);
+            }
+
+            else if(enemy.imageID == enemyDummy)
+            {
+                dummySprite.setPosition(enemy.pos);
+                dummySprite.setRotation(enemy.rotation-90);
+                window.draw(dummySprite);
+            }
+
+            // Make 'em bright again.
+            {
+                meleeLightSprite.setColor(sf::Color::White);
+                meleeHeavySprite.setColor(sf::Color::White);
+                rangeLightSprite.setColor(sf::Color::White);
+                rangeHeavySprite.setColor(sf::Color::White);
+                turretLightSprite.setColor(sf::Color::White);
+                turretHeavySprite.setColor(sf::Color::White);
+            }
+
+        }
+
+
         for(auto &enemyPtr : enemies)
         {
             Enemy &enemy = *enemyPtr.get();
@@ -2302,7 +2392,15 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
             if(enemy.construct)
                 finalDamage *= owner.getConstructDamageMultiplier();
 
-            enemy.health -= finalDamage;
+
+            bool enemyKilled = enemy.affectHealth(finalDamage);
+            if(enemyKilled)
+            {
+                owner.kills++;
+
+                enemyManager.deadEnemies.push_back(enemyPtr.lock());
+                enemyManager.enemies.remove(enemyPtr.lock());
+            }
 
 
             std::vector<int> arcedIDs;
@@ -2561,12 +2659,15 @@ void AttackManager::manageAttacks()
                         if(enemy.construct)
                             finalDamage *= owner.getConstructDamageMultiplier();
 
-                        enemy.health -= finalDamage;
+                        bool enemyKilled = enemy.affectHealth(finalDamage);
+                        if(enemyKilled)
+                        {
+                            owner.kills++;
 
-
+                            enemyManager.deadEnemies.push_back(enemyPtr);
+                            enemyManager.enemies.remove(enemyPtr);
+                        }
                     }
-
-
                 }
 
 
