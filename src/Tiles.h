@@ -103,7 +103,7 @@ public:
     };
 
 
-    void affectHealth(float damage)
+    bool affectHealth(float damage)
     {
          health -= std::max(damage-resistence,0.f);
          if(health <= 0)
@@ -113,7 +113,10 @@ public:
              walkable = true;
              resistence = 0;
              workTime = 0;
+             // Destroyed!
+             return true;
          }
+         return false;
     }
 
     ChunkTile()
@@ -321,6 +324,19 @@ public:
         }
         ChunkTile tiley;
         return tiley;
+    }
+
+    WorldChunk& getChunk(sf::Vector2i pos)
+    {
+        for(auto &chunk : chunks)
+        {
+            sf::Vector2i chunkPos(chunk.pos.x/1024,chunk.pos.y/1024);
+            sf::Vector2i checkPos(pos.x/1024,pos.y/1024);
+            if(checkPos == chunkPos)
+                return chunk;
+        }
+        WorldChunk chunky;
+        return chunky;
     }
 
     bool isTileWalkable(sf::Vector2i pos)

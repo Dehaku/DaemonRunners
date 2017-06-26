@@ -1295,13 +1295,13 @@ public:
 
     }
 
-    void makePlayer()
+    void makePlayer(sf::Vector2f spawnPos = gvars::mousePos)
     {
         std::shared_ptr<Player> playerPtr(new Player());
         players.push_back(playerPtr);
         Player &player = *playerPtr.get();
 
-        player.pos = gvars::mousePos;
+        player.pos = spawnPos;
         // player.pos = sf::Vector2f(102400,102400);
         player.healthMax = 100;
         player.health = player.healthMax;
@@ -1330,6 +1330,7 @@ public:
     bool construct;
     std::weak_ptr<Player> target;
     int targetNumber;
+    std::vector<ChunkTile*> storedPath;
 
     Enemy()
     {
@@ -1868,7 +1869,7 @@ public:
 
                     if(subTracker > lastUpdated && spawn.targetPathed)
                     {
-                        std::cout << subTracker << std::endl;
+                        // std::cout << subTracker << std::endl;
                         lastUpdated = subTracker;
 
 
@@ -2028,8 +2029,11 @@ void spawnLogic()
             }
         }
 
-        for(auto &spawnTile : spawnTiles)
+        for(auto &spawnTile : spawnControlManager.spawnControllers)
         {
+
+            if(!spawnTile.targetPathed)
+                continue;
 
             if(random(1,4) != 1) // Don't want it ALWAYS spewing.
                 continue;
@@ -2038,14 +2042,16 @@ void spawnLogic()
             if(randomEnemy > 4)
             { // Melee Light
 
-                sf::Vector2f spawnPos = spawnTile->pos;
+                sf::Vector2f spawnPos = spawnTile.pos;
                 spawnPos += sf::Vector2f(16,16);
                 enemyManager.makeEnemy(spawnPos,EnemyManager::meleeLight);
+
+                enemyManager.enemies.back().get()->storedPath = spawnTile.storedPath;
             }
             else if(randomEnemy > 2)
             { // Melee Heavy
 
-                sf::Vector2f spawnPos = spawnTile->pos;
+                sf::Vector2f spawnPos = spawnTile.pos;
                 spawnPos += sf::Vector2f(16,16);
                 enemyManager.makeEnemy(spawnPos,EnemyManager::meleeHeavy);
 
@@ -2053,14 +2059,14 @@ void spawnLogic()
             else if(randomEnemy > 1)
             { // Range Light
 
-                sf::Vector2f spawnPos = spawnTile->pos;
+                sf::Vector2f spawnPos = spawnTile.pos;
                 spawnPos += sf::Vector2f(16,16);
                 enemyManager.makeEnemy(spawnPos,EnemyManager::rangeLight);
 
             }
             else if(randomEnemy == 1)
             { // Range Heavy
-                sf::Vector2f spawnPos = spawnTile->pos;
+                sf::Vector2f spawnPos = spawnTile.pos;
                 spawnPos += sf::Vector2f(16,16);
                 enemyManager.makeEnemy(spawnPos,EnemyManager::rangeHeavy);
             }
@@ -2105,7 +2111,13 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
 
             finalDamage *= owner.getConstructDamageMultiplier();
 
-            tile.affectHealth(finalDamage);
+            bool tileDestroyed = tile.affectHealth(finalDamage);
+
+            if(tileDestroyed)
+            {
+                WorldChunk & chunk = worldManager.currentWorld.getChunk(sf::Vector2i(tracePos));
+                chunk.buildChunkImage();
+            }
 
             done = true;
             returnPos = tracePos;
@@ -2373,7 +2385,6 @@ void AttackManager::manageAttacks()
                     sf::Vector2i checkPos(owner.pos.x/1024,owner.pos.y/1024);
                     if(checkPos == chunkPos)
                     {
-                        std::cout << chunkPos.x << "/" << chunkPos.y << "||" << checkPos.x << "/" << checkPos.y;
                         for(int x = 0; x != 32; x++)
                             for(int y = 0; y != 32; y++)
                         {
@@ -2391,7 +2402,10 @@ void AttackManager::manageAttacks()
 
                                 finalDamage *= owner.getConstructDamageMultiplier();
 
-                                tile.affectHealth(finalDamage);
+                                bool tileDestroyed = tile.affectHealth(finalDamage);
+
+                                if(tileDestroyed)
+                                    chunk.buildChunkImage();
 
 
                             }
@@ -3200,6 +3214,20 @@ void simulationMenu()
 
 }
 
+void drawLoadingText(std::string text)
+{
+    sfe::RichText richText;
+    richText.setCharacterSize(20);
+    richText.setFont(gvars::defaultFont);
+    richText.setPosition(300+RESOLUTION.x/2,300+RESOLUTION.y/2);
+
+    richText << sf::Color::White << text;
+
+    richText.setOrigin(richText.getLocalBounds().width/2,richText.getLocalBounds().height/2);
+
+    window.draw(richText);
+}
+
 void jobsMenu()
 {
     sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
@@ -3208,12 +3236,23 @@ void jobsMenu()
     if(needsWorld)
     {
         needsWorld = false;
+
+        drawLoadingText("Generating World");
         worldManager.generateWorld(20,100);
+        drawLoadingText("Generating Spawners");
         spawnControlManager.setupSpawners();
 
         std::cout << "Building Chunk Images \n";
+        drawLoadingText("Generating Chunk Images");
         for(auto &chunk : worldManager.currentWorld.chunks)
             chunk.buildChunkImage();
+
+        playerManager.makePlayer(sf::Vector2f(worldManager.currentWorld.chunks.front().pos.x+(32*16),worldManager.currentWorld.chunks.front().pos.y+(32*16)));
+
+        drawLoadingText("Generating Initial Paths");
+        spawnControlManager.pathSpawners();
+
+
     }
 
     if(inputState.key[Key::X].time == 1)
