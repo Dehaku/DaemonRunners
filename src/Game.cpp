@@ -1401,7 +1401,37 @@ void runEnemyBrain(Enemy &enemy)
         }
     }
 
+    { // Movement Code
+        sf::Vector2f desiredPosition;
+        bool positionSet = false;
 
+        if(!enemy.storedPath.empty())
+        {
+            desiredPosition = enemy.storedPath.front()->pos;
+            positionSet = true;
+        }
+
+
+        if(positionSet)
+        {
+            if(desiredPosition.x > enemy.pos.x)
+                enemy.pos.x += enemy.getMoveSpeed();
+            if(desiredPosition.x < enemy.pos.x)
+                enemy.pos.x -= enemy.getMoveSpeed();
+            if(desiredPosition.y > enemy.pos.y)
+                enemy.pos.y += enemy.getMoveSpeed();
+            if(desiredPosition.y < enemy.pos.y)
+                enemy.pos.y -= enemy.getMoveSpeed();
+        }
+
+
+
+
+
+
+        if(math::distance(enemy.pos,desiredPosition) <= 5)
+            enemy.storedPath.erase(enemy.storedPath.begin());
+    }
 
 }
 
@@ -2055,6 +2085,8 @@ void spawnLogic()
                 spawnPos += sf::Vector2f(16,16);
                 enemyManager.makeEnemy(spawnPos,EnemyManager::meleeHeavy);
 
+                enemyManager.enemies.back().get()->storedPath = spawnTile.storedPath;
+
             }
             else if(randomEnemy > 1)
             { // Range Light
@@ -2063,12 +2095,16 @@ void spawnLogic()
                 spawnPos += sf::Vector2f(16,16);
                 enemyManager.makeEnemy(spawnPos,EnemyManager::rangeLight);
 
+                enemyManager.enemies.back().get()->storedPath = spawnTile.storedPath;
+
             }
             else if(randomEnemy == 1)
             { // Range Heavy
                 sf::Vector2f spawnPos = spawnTile.pos;
                 spawnPos += sf::Vector2f(16,16);
                 enemyManager.makeEnemy(spawnPos,EnemyManager::rangeHeavy);
+
+                enemyManager.enemies.back().get()->storedPath = spawnTile.storedPath;
             }
         }
     }
