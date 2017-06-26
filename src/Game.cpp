@@ -1331,6 +1331,9 @@ public:
     std::weak_ptr<Player> target;
     int targetNumber;
     std::vector<ChunkTile*> storedPath;
+    int lastVisionCheck;
+    sf::Vector2f lastVisionPos;
+    bool followingVision;
 
     Enemy()
     {
@@ -1338,8 +1341,42 @@ public:
         id = worldManager.globalIDs++;
         creature = true;
         construct = false;
+        lastVisionCheck = 0;
+        followingVision = false;
     }
 };
+
+bool visionCheck(sf::Vector2f startPos, sf::Vector2f endPos)
+{
+
+    int accuracy = 5; // The smaller, the more accurate, but the more frames. Basically how many pixels we skip.
+    sf::Vector2f tracePos = startPos;
+    float transitAngle = math::angleBetweenVectors(tracePos,endPos);
+
+    bool done = false;
+    while(!done)
+    {
+        if(inputState.key[Key::Tab])
+            shapes.createCircle(tracePos.x,tracePos.y,3,sf::Color::Green);
+
+        if(math::distance(tracePos,endPos) <= accuracy)
+        {
+
+            done = true;
+            return true;
+        }
+
+        if((!worldManager.currentWorld.isTileWalkable(sf::Vector2i(tracePos) )))
+        {
+            done = true;
+            return false;
+        }
+
+        tracePos = math::angleCalc(tracePos,transitAngle,accuracy);
+    }
+
+    return false;
+}
 
 void runEnemyBrain(Enemy &enemy)
 {
@@ -1405,7 +1442,37 @@ void runEnemyBrain(Enemy &enemy)
         sf::Vector2f desiredPosition;
         bool positionSet = false;
 
-        if(!enemy.storedPath.empty())
+
+        enemy.lastVisionCheck--;
+        if(enemy.followingVision)
+        {
+            desiredPosition = enemy.lastVisionPos;
+            positionSet = true;
+            if(enemy.lastVisionCheck <= 0)
+            {
+                if(enemy.target.lock() && visionCheck(enemy.pos,enemy.target.lock().get()->pos))
+                {
+                    enemy.lastVisionPos = enemy.target.lock().get()->pos;
+                    enemy.followingVision = true;
+                    desiredPosition = enemy.target.lock().get()->pos;
+                    positionSet = true;
+                }
+                else
+                {
+                    enemy.followingVision = false;
+                }
+                enemy.lastVisionCheck = 60;
+            }
+        }
+        else if(enemy.target.lock() && visionCheck(enemy.pos,enemy.target.lock().get()->pos))
+        {
+            enemy.lastVisionCheck = 60;
+            enemy.lastVisionPos = enemy.target.lock().get()->pos;
+            enemy.followingVision = true;
+            desiredPosition = enemy.target.lock().get()->pos;
+            positionSet = true;
+        }
+        else if(!enemy.storedPath.empty())
         {
             desiredPosition = enemy.storedPath.front()->pos;
             positionSet = true;
@@ -1429,7 +1496,7 @@ void runEnemyBrain(Enemy &enemy)
 
 
 
-        if(math::distance(enemy.pos,desiredPosition) <= 5)
+        if(!enemy.storedPath.empty() && math::distance(enemy.pos,desiredPosition) <= 5)
             enemy.storedPath.erase(enemy.storedPath.begin());
     }
 
@@ -2138,7 +2205,7 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
         }
 
 
-        // Wall damage wil lbe done with this line.
+        // Wall damage will be done with this line.
         if((!worldManager.currentWorld.isTileWalkable(sf::Vector2i(tracePos) )))
         {
             ChunkTile & tile = worldManager.currentWorld.getTile(sf::Vector2i(tracePos));
@@ -4494,6 +4561,10 @@ void runPlayerInputs()
 {
 
     playerManager.runPlayerCharacterInput();
+
+
+    // std::cout << "CanSee: " << visionCheck(playerManager.players.back().get()->pos,gvars::mousePos) << std::endl;
+
     spawning();
 }
 
