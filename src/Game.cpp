@@ -1288,7 +1288,6 @@ public:
             if(meleeWeapon.attackSpeedTimer <= 0 && inputState.rmbTime)
             { // Melee
                 meleeWeapon.attackSpeedTimer = meleeWeapon.attackSpeed;
-                //if(player.)
 
                 Attack attack;
                 attack.owner = players.back();
@@ -2597,10 +2596,14 @@ void AttackManager::manageAttacks()
 
         if(attack.attackType == attack.melee)
         {
+
+
             Weapon weapon = owner.characterClass.meleeWeapon;
 
             float baseRot = owner.rotation;
             float radius = weapon.attackRadius/2;
+
+
 
             if(attack.firstFrame)
             { // Attack Code
@@ -2613,6 +2616,7 @@ void AttackManager::manageAttacks()
                     sf::Vector2i checkPos(owner.pos.x/1024,owner.pos.y/1024);
                     if(checkPos == chunkPos)
                     {
+
                         for(int x = 0; x != 32; x++)
                             for(int y = 0; y != 32; y++)
                         {
@@ -2620,11 +2624,19 @@ void AttackManager::manageAttacks()
                             int tilePosX = (chunk.pos.x)+(x*32)+16;
                             int tilePosY = (chunk.pos.y)+(y*32)+16;
 
+                            if(tile.health <= 0)
+                                continue;
+
+                            if(math::distance(owner.pos,sf::Vector2f(tilePosX,tilePosY)) > weapon.attackRange)
+                                continue;
+
+
+
                             float tileAngle = math::angleBetweenVectors(owner.pos,sf::Vector2f(tilePosX,tilePosY));
                             float compareAngle = math::angleDiff(owner.rotation,tileAngle);
 
 
-                            if(compareAngle < radius && compareAngle > -radius && math::distance(owner.pos,sf::Vector2f(tilePosX,tilePosY)) <= weapon.attackRange)
+                            if(compareAngle < radius && compareAngle > -radius)
                             {
                                 float finalDamage = owner.characterClass.meleeWeapon.attackDamage;
 
@@ -2635,12 +2647,10 @@ void AttackManager::manageAttacks()
                                 if(tileDestroyed)
                                     chunk.buildChunkImage();
 
-
                             }
                         }
                     }
                 }
-
 
                 for(auto &enemyPtr : enemyManager.enemies)
                 {
@@ -2651,7 +2661,7 @@ void AttackManager::manageAttacks()
 
                     if(compareAngle < radius && compareAngle > -radius && math::distance(owner.pos,enemy.pos) <= weapon.attackRange)
                     {
-                        shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Red);
+                        // shapes.createLine(owner.pos.x,owner.pos.y,enemy.pos.x,enemy.pos.y,1,sf::Color::Red);
 
                         float finalDamage = weapon.attackDamage;
                         if(enemy.creature)
