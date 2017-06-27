@@ -653,7 +653,10 @@ void Shapes::drawShapes()
     }
     for (auto &elem : polygons)
     {
+        sf::View oldView = window.getView();
+        window.setView(gvars::view1);
         window.draw(elem);
+        window.setView(oldView);
     }
     polygons.clear();
     richList.clear();

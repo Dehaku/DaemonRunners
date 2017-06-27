@@ -1127,8 +1127,11 @@ public:
         Weapon &meleeWeapon = player.characterClass.meleeWeapon;
         Weapon &rangeWeapon = player.characterClass.rangeWeapon;
 
-        meleeWeapon.attackSpeedTimer--;
-        rangeWeapon.attackSpeedTimer--;
+        if(player.characterClass.focusable)
+            meleeWeapon.attackSpeedTimer -= 1+(1*(0.01*player.characterClass.focusStacks));
+        else
+            meleeWeapon.attackSpeedTimer -= 1;
+        rangeWeapon.attackSpeedTimer -= 1;
 
 
         if(player.characterClass.focusable)
@@ -2684,7 +2687,13 @@ void AttackManager::manageAttacks()
 
                         float finalDamage = weapon.attackDamage;
                         if(enemy.creature)
+                        {
+                            if(owner.characterClass.focusable && owner.characterClass.focusStacks > 0)
+                                finalDamage += finalDamage*(0.01*owner.characterClass.focusStacks);
+
                             finalDamage *= owner.getEvilDamageMultiplier();
+                        }
+
                         if(enemy.construct)
                             finalDamage *= owner.getConstructDamageMultiplier();
 
@@ -2729,11 +2738,15 @@ void AttackManager::manageAttacks()
 
 
 
-                sf::Vector2f leftEndPos = math::angleCalc(owner.pos,baseRot-radius,weapon.attackRange);
-                sf::Vector2f rightEndPos = math::angleCalc(owner.pos,baseRot+radius,weapon.attackRange);
+                // sf::Vector2f leftEndPos = math::angleCalc(owner.pos,baseRot-radius,weapon.attackRange);
+                // sf::Vector2f rightEndPos = math::angleCalc(owner.pos,baseRot+radius,weapon.attackRange);
 
-                shapes.createLine(owner.pos.x,owner.pos.y,leftEndPos.x,leftEndPos.y,1,sf::Color::Blue);
-                shapes.createLine(owner.pos.x,owner.pos.y,rightEndPos.x,rightEndPos.y,1,sf::Color::Blue);
+                // shapes.createLine(owner.pos.x,owner.pos.y,leftEndPos.x,leftEndPos.y,1,sf::Color::Blue);
+                // shapes.createLine(owner.pos.x,owner.pos.y,rightEndPos.x,rightEndPos.y,1,sf::Color::Blue);
+
+
+                shapes.createCone(owner.pos,baseRot-90,radius*2,weapon.attackRange,sf::Color::Blue);
+
             }
         }
     }
@@ -4434,25 +4447,6 @@ void drawPlayerAttackCooldowns()
                 focusTex = &texturemanager.getTexture("MomentOfFocus.png");
             }
 
-
-            static int xMod = 15;
-            static int yMod = 62;
-            std::cout << "X/Y Mod: " << xMod << "/" << yMod << std::endl;
-            if(inputState.key[Key::Up].time == 1 || inputState.key[Key::Up].time >= 15)
-                yMod--;
-            if(inputState.key[Key::Down].time == 1 || inputState.key[Key::Down].time >= 15)
-                yMod++;
-            if(inputState.key[Key::Left].time == 1 || inputState.key[Key::Left].time >= 15)
-                xMod--;
-            if(inputState.key[Key::Right].time == 1 || inputState.key[Key::Right].time >= 15)
-                xMod++;
-
-
-
-
-
-
-
             shapes.createImageButton(sf::Vector2f(500,720),*focusTex,"",0,&gvars::hudView);
             shapes.createText(sf::Vector2f(500-24+1,720+18+1),10,sf::Color::Black,"x"+std::to_string(player.characterClass.focusStacks),&gvars::hudView);
             shapes.createText(sf::Vector2f(500-24-1,720+18-1),10,sf::Color::Black,"x"+std::to_string(player.characterClass.focusStacks),&gvars::hudView);
@@ -4498,6 +4492,9 @@ void drawAttacks()
         for(auto &atkMem : attack.memory)
         {
             shapes.createLine(atkMem.startPos.x,atkMem.startPos.y,atkMem.endPos.x,atkMem.endPos.y,1,atkMem.color);
+            //AttackMemory.
+            if(atkMem.melee)
+                shapes.createCone(atkMem.startPos,atkMem.rotation,atkMem.radius,math::distance(atkMem.startPos,atkMem.endPos),atkMem.color);
         }
     }
 }

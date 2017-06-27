@@ -214,11 +214,14 @@ void WorldChunk::generateTiles()
             buildChallengeChunk(*this);
     }
 
+    if(!startingPoint)
+    { // Spawn Points
+        buildTile(tiles[13][18], ChunkTile::ENEMYSPAWNER);
+        buildTile(tiles[13][13], ChunkTile::ENEMYSPAWNER);
+        buildTile(tiles[18][13], ChunkTile::ENEMYSPAWNER);
+        buildTile(tiles[18][18], ChunkTile::ENEMYSPAWNER);
+    }
 
-    buildTile(tiles[13][18], ChunkTile::ENEMYSPAWNER);
-    buildTile(tiles[13][13], ChunkTile::ENEMYSPAWNER);
-    buildTile(tiles[18][13], ChunkTile::ENEMYSPAWNER);
-    buildTile(tiles[18][18], ChunkTile::ENEMYSPAWNER);
 
     if(deadEnd)
     {
