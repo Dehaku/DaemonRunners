@@ -1764,19 +1764,23 @@ public:
         window.setView(gvars::view1);
 
         // Render stuffs
+
+        // Make the dead darker so they're easier to differentiate;
+        {
+            meleeLightSprite.setColor(sf::Color(50,50,50));
+            meleeHeavySprite.setColor(sf::Color(50,50,50));
+            rangeLightSprite.setColor(sf::Color(50,50,50));
+            rangeHeavySprite.setColor(sf::Color(50,50,50));
+            turretLightSprite.setColor(sf::Color(50,50,50));
+            turretHeavySprite.setColor(sf::Color(50,50,50));
+        }
+
         for(auto &enemyPtr : deadEnemies)
         {
             Enemy &enemy = *enemyPtr.get();
 
-            // Make 'em darker so they're easier to differentiate;
-            {
-                meleeLightSprite.setColor(sf::Color(50,50,50));
-                meleeHeavySprite.setColor(sf::Color(50,50,50));
-                rangeLightSprite.setColor(sf::Color(50,50,50));
-                rangeHeavySprite.setColor(sf::Color(50,50,50));
-                turretLightSprite.setColor(sf::Color(50,50,50));
-                turretHeavySprite.setColor(sf::Color(50,50,50));
-            }
+            if(!onScreen(enemy.pos))
+                continue;
 
 
 
@@ -1830,18 +1834,18 @@ public:
                 window.draw(dummySprite);
             }
 
-            // Make 'em bright again.
-            {
-                meleeLightSprite.setColor(sf::Color::White);
-                meleeHeavySprite.setColor(sf::Color::White);
-                rangeLightSprite.setColor(sf::Color::White);
-                rangeHeavySprite.setColor(sf::Color::White);
-                turretLightSprite.setColor(sf::Color::White);
-                turretHeavySprite.setColor(sf::Color::White);
-            }
 
         }
 
+        // Make 'em bright again.
+        {
+            meleeLightSprite.setColor(sf::Color::White);
+            meleeHeavySprite.setColor(sf::Color::White);
+            rangeLightSprite.setColor(sf::Color::White);
+            rangeHeavySprite.setColor(sf::Color::White);
+            turretLightSprite.setColor(sf::Color::White);
+            turretHeavySprite.setColor(sf::Color::White);
+        }
 
         for(auto &enemyPtr : enemies)
         {
@@ -1899,7 +1903,10 @@ public:
             }
 
 
+            float healthPercent = enemy.health/enemy.getHealthMax();
 
+            shapes.createSquare(enemy.pos.x-27,enemy.pos.y-17,enemy.pos.x+52,enemy.pos.y-3,sf::Color::Black);
+            shapes.createSquare(enemy.pos.x-25,enemy.pos.y-15,enemy.pos.x-25+75*healthPercent,enemy.pos.y-5,sf::Color::Red);
 
 
             /*
@@ -1935,6 +1942,7 @@ public:
 
             enemy.moveSpeed = 0;
             enemy.healthMax = 100000;
+            enemy.health = enemy.getHealthMax();
             enemy.rotationSpeed = 1;
 
             baseEnemies.push_back(enemy);
@@ -1949,6 +1957,7 @@ public:
 
             enemy.moveSpeed = 2;
             enemy.healthMax = 50;
+            enemy.health = enemy.getHealthMax();
             enemy.rotationSpeed = 2;
 
             enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyLightMelee);
@@ -1965,6 +1974,7 @@ public:
 
             enemy.moveSpeed = 0.5;
             enemy.healthMax = 200;
+            enemy.health = enemy.getHealthMax();
             enemy.rotationSpeed = 0.5;
             enemy.armorReduction = 0.2;
 
@@ -1981,6 +1991,7 @@ public:
 
             enemy.moveSpeed = 2;
             enemy.healthMax = 100;
+            enemy.health = enemy.getHealthMax();
             //enemy.rotationSpeed
             //enemy.armorReduction = 0.2;
 
@@ -1997,6 +2008,7 @@ public:
 
             enemy.moveSpeed = 1;
             enemy.healthMax = 50;
+            enemy.health = enemy.getHealthMax();
             //enemy.rotationSpeed
             //enemy.armorReduction = 0.2;
 
@@ -2014,6 +2026,7 @@ public:
 
             enemy.moveSpeed = 0;
             enemy.healthMax = 200;
+            enemy.health = enemy.getHealthMax();
             enemy.rotationSpeed = 0.5;
             enemy.armorReduction = 0.4;
 
@@ -2031,6 +2044,7 @@ public:
 
             enemy.moveSpeed = 0;
             enemy.healthMax = 500;
+            enemy.health = enemy.getHealthMax();
             enemy.rotationSpeed = 0.5;
             enemy.armorReduction = 0.6;
 
@@ -4447,6 +4461,12 @@ void drawPlayers()
             shapes.createText(player.pos.x,player.pos.y+25,10,sf::Color(100,100,100),staminaString);
         else
             shapes.createText(player.pos.x,player.pos.y+25,10,sf::Color::Yellow,staminaString);
+
+
+        float healthPercent = player.health/player.getHealthMax();
+
+        shapes.createSquare(player.pos.x-27,player.pos.y-17,player.pos.x+52,player.pos.y-3,sf::Color::Black);
+        shapes.createSquare(player.pos.x-25,player.pos.y-15,player.pos.x+50*healthPercent,player.pos.y-5,sf::Color::Red);
 
     }
 
