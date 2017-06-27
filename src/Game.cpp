@@ -1688,6 +1688,7 @@ public:
 
         // enemy.name = "Enemy Dummy";
         enemy.pos = spawnPos;
+        enemy.id = worldManager.globalIDs++;
         // enemy.healthMax = 100;
     }
 
@@ -1905,8 +1906,8 @@ public:
 
             float healthPercent = enemy.health/enemy.getHealthMax();
 
-            shapes.createSquare(enemy.pos.x-27,enemy.pos.y-17,enemy.pos.x+52,enemy.pos.y-3,sf::Color::Black);
-            shapes.createSquare(enemy.pos.x-25,enemy.pos.y-15,enemy.pos.x-25+75*healthPercent,enemy.pos.y-5,sf::Color::Red);
+            shapes.createSquare(enemy.pos.x-26,enemy.pos.y-21,enemy.pos.x+26,enemy.pos.y-14,sf::Color::Black);
+            shapes.createSquare(enemy.pos.x-25,enemy.pos.y-20,enemy.pos.x-25+50*healthPercent,enemy.pos.y-15,sf::Color::Red);
 
 
             /*
@@ -4465,8 +4466,8 @@ void drawPlayers()
 
         float healthPercent = player.health/player.getHealthMax();
 
-        shapes.createSquare(player.pos.x-27,player.pos.y-17,player.pos.x+52,player.pos.y-3,sf::Color::Black);
-        shapes.createSquare(player.pos.x-25,player.pos.y-15,player.pos.x+50*healthPercent,player.pos.y-5,sf::Color::Red);
+        shapes.createSquare(player.pos.x-26,player.pos.y-21,player.pos.x+26,player.pos.y-14,sf::Color::Black);
+        shapes.createSquare(player.pos.x-25,player.pos.y-20,player.pos.x-25+50*healthPercent,player.pos.y-15,sf::Color::Green);
 
     }
 
