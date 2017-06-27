@@ -100,8 +100,8 @@ public:
             if(weapon.weaponID == weaponID)
                 return weapon;
 
-        for(auto &weapon : weapons)
-            return weapon;
+
+        return weapons.front();
     }
 
     WeaponManager()
@@ -3850,6 +3850,10 @@ void drawSubMain()
         int toggleFullscreen = shapes.createImageButton(buttonPos,texturemanager.getTexture("ArrowButton.png"),"",180,&gvars::hudView);
         shapes.shapes.back().layer = 15050;
 
+        buttonPos.y += 20;
+        int togglevSync = shapes.createImageButton(buttonPos,texturemanager.getTexture("ArrowButton.png"),"",180,&gvars::hudView);
+        shapes.shapes.back().layer = 15050;
+
 
 
 
@@ -3868,6 +3872,27 @@ void drawSubMain()
             if((inputState.lmbTime == 1))
                 toggle(resolution.fullscreen);
         }
+
+        if(shapes.shapeHovered(togglevSync))
+        {
+            std::string onOrOff;
+            if(gvars::vSync)
+                onOrOff = "On";
+            else
+                onOrOff = "Off";
+            shapes.createText(gvars::mousePos,9,sf::Color::White,"  Toggle VSync! Currently: " + onOrOff);
+            shapes.shapes.back().layer = 15075;
+            if((inputState.lmbTime == 1))
+            {
+                toggle(gvars::vSync);
+                window.setVerticalSyncEnabled(gvars::vSync);
+            }
+
+
+        }
+
+
+
 
 
         if(shapes.shapeHovered(applyResolution))

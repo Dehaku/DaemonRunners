@@ -348,6 +348,8 @@ sf::Font defaultFont;
 
 float screenShake = 0;
 
+bool vSync = false;
+
 } // namespace gvars
 
 Screen screen;
