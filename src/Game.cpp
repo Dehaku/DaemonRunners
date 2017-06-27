@@ -574,6 +574,7 @@ public:
     float evilDamageMultipler; // Angel
     bool focusable; // Monk
     unsigned int focusStacks; // Monk
+    int focusDecay;
 
     Weapon rangeWeapon;
     Weapon meleeWeapon;
@@ -612,6 +613,7 @@ public:
         evilDamageMultipler = 1;
         focusable = false;
         focusStacks = 0;
+        focusDecay = 0;
 
         rangeWeapon = weaponManager.getWeapon(Weapon::Nothing);
         meleeWeapon = weaponManager.getWeapon(Weapon::Nothing);
@@ -1128,6 +1130,17 @@ public:
         meleeWeapon.attackSpeedTimer--;
         rangeWeapon.attackSpeedTimer--;
 
+
+        if(player.characterClass.focusable)
+        {
+            player.characterClass.focusDecay--;
+            if(player.characterClass.focusDecay <= 0)
+            {
+                player.characterClass.focusDecay = 60;
+                if(player.characterClass.focusStacks > 0)
+                    player.characterClass.focusStacks--;
+            }
+        }
 
         { // Rotation Code
            player.rotationPoint = gvars::mousePos;
@@ -2306,7 +2319,7 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
     // Optimizations; Accuracy, Filter enemies before using this function via one 180 degree angle check, or two side by side opposite angle checks to mimic a square.
     // Possibly also the isWalkableTile function.
 
-    int accuracy = 1; // The smaller, the more accurate, but the more frames. Basically how many pixels we skip.
+    int accuracy = 3; // The smaller, the more accurate, but the more frames. Basically how many pixels we skip.
     sf::Vector2f tracePos = owner.pos;
     float transitAngle = math::angleBetweenVectors(tracePos,attackPos);
 
@@ -2679,6 +2692,8 @@ void AttackManager::manageAttacks()
                         if(enemyKilled)
                         {
                             owner.kills++;
+                            if(owner.characterClass.focusable)
+                                owner.characterClass.focusStacks += 5;
 
                             enemyManager.deadEnemies.push_back(enemyPtr);
                             enemyManager.enemies.remove(enemyPtr);
@@ -4409,6 +4424,42 @@ void drawPlayerAttackCooldowns()
         return;
 
     Player &player = *playerManager.players.back().get();
+
+    { // Focus Stacks
+        if(player.characterClass.focusable)
+        {
+            static sf::Texture* focusTex;
+            if(focusTex == nullptr)
+            {
+                focusTex = &texturemanager.getTexture("MomentOfFocus.png");
+            }
+
+
+            static int xMod = 15;
+            static int yMod = 62;
+            std::cout << "X/Y Mod: " << xMod << "/" << yMod << std::endl;
+            if(inputState.key[Key::Up].time == 1 || inputState.key[Key::Up].time >= 15)
+                yMod--;
+            if(inputState.key[Key::Down].time == 1 || inputState.key[Key::Down].time >= 15)
+                yMod++;
+            if(inputState.key[Key::Left].time == 1 || inputState.key[Key::Left].time >= 15)
+                xMod--;
+            if(inputState.key[Key::Right].time == 1 || inputState.key[Key::Right].time >= 15)
+                xMod++;
+
+
+
+
+
+
+
+            shapes.createImageButton(sf::Vector2f(500,720),*focusTex,"",0,&gvars::hudView);
+            shapes.createText(sf::Vector2f(500-24+1,720+18+1),10,sf::Color::Black,"x"+std::to_string(player.characterClass.focusStacks),&gvars::hudView);
+            shapes.createText(sf::Vector2f(500-24-1,720+18-1),10,sf::Color::Black,"x"+std::to_string(player.characterClass.focusStacks),&gvars::hudView);
+            shapes.createText(sf::Vector2f(500-24,720+18),10,sf::Color::White,"x"+std::to_string(player.characterClass.focusStacks),&gvars::hudView);
+
+        }
+    }
 
     Weapon &meleeWeapon = player.characterClass.meleeWeapon;
     Weapon &rangeWeapon = player.characterClass.rangeWeapon;
