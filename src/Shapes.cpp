@@ -728,5 +728,7 @@ Drawable::Drawable()
 
 std::vector<Drawable> drawables;
 
+TextOverlayManager textOverlayManager;
+
 
 

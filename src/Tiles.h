@@ -105,18 +105,26 @@ public:
 
     bool affectHealth(float damage)
     {
-         health -= std::max(damage-resistence,0.f);
-         if(health <= 0)
-         {
-             health = 0;
-             type = FLOOR;
-             walkable = true;
-             resistence = 0;
-             workTime = 0;
-             // Destroyed!
-             return true;
-         }
-         return false;
+        health -= std::max(damage-resistence,0.f);
+
+        textOverlay tOver;
+        tOver.text = std::to_string((int) std::max(damage-resistence,0.f));
+        tOver.color = sf::Color(150,150,150);
+        tOver.pos = sf::Vector2f(pos.x+random(-10,10),pos.y-10+random(-10,10));
+        textOverlayManager.texts.push_back(tOver);
+
+
+        if(health <= 0)
+        {
+            health = 0;
+            type = FLOOR;
+            walkable = true;
+            resistence = 0;
+            workTime = 0;
+            // Destroyed!
+            return true;
+        }
+        return false;
     }
 
     ChunkTile()

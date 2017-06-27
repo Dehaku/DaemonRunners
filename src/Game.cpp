@@ -10,63 +10,6 @@ StateTracker::StateTracker()
 StateTracker stateTracker;
 
 
-class textOverlay
-{
-public:
-    std::string text;
-    int lifeTime;
-    int size;
-    sf::Color color;
-    bool fakeShadow;
-    sf::Vector2f pos;
-    bool floatUp;
-
-    bool toDelete;
-
-    void logic()
-    {
-        if(lifeTime <= 0)
-            toDelete = true;
-
-        if(floatUp)
-            pos.y -= 0.5;
-
-        lifeTime--;
-    }
-
-    textOverlay()
-    {
-        color = sf::Color(255,120,0);
-        fakeShadow = true;
-        lifeTime = 30;
-        size = 10;
-        floatUp = true;
-        toDelete = false;
-    }
-};
-
-class TextOverlayManager
-{
-public:
-
-    std::vector<textOverlay> texts;
-    void handleTexts()
-    {
-        for(auto &text : texts)
-        {
-            text.logic();
-
-            if(text.fakeShadow)
-            {
-                shapes.createText(sf::Vector2f(text.pos.x-1,text.pos.y-1),text.size,sf::Color::Black,text.text);
-                shapes.createText(sf::Vector2f(text.pos.x+1,text.pos.y+1),text.size,sf::Color::Black,text.text);
-            }
-            shapes.createText(text.pos,text.size,text.color,text.text);
-        }
-        AnyDeletes(texts);
-    }
-};
-TextOverlayManager textOverlayManager;
 
 
 class Weapon
@@ -2439,6 +2382,8 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
 
                 bool tileDestroyed = tile.affectHealth(finalDamage);
 
+
+
                 if(tileDestroyed)
                 {
                     WorldChunk & chunk = worldManager.currentWorld.getChunk(sf::Vector2i(tracePos));
@@ -2748,6 +2693,8 @@ void AttackManager::manageAttacks()
                                 finalDamage *= owner.getConstructDamageMultiplier();
 
                                 bool tileDestroyed = tile.affectHealth(finalDamage);
+
+
 
                                 if(tileDestroyed)
                                     chunk.updateChunkImage(sf::Vector2i(x*32,y*32));
