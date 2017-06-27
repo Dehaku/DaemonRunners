@@ -10,6 +10,65 @@ StateTracker::StateTracker()
 StateTracker stateTracker;
 
 
+class textOverlay
+{
+public:
+    std::string text;
+    int lifeTime;
+    int size;
+    sf::Color color;
+    bool fakeShadow;
+    sf::Vector2f pos;
+    bool floatUp;
+
+    bool toDelete;
+
+    void logic()
+    {
+        if(lifeTime <= 0)
+            toDelete = true;
+
+        if(floatUp)
+            pos.y -= 0.5;
+
+        lifeTime--;
+    }
+
+    textOverlay()
+    {
+        color = sf::Color(255,120,0);
+        fakeShadow = true;
+        lifeTime = 30;
+        size = 10;
+        floatUp = true;
+        toDelete = false;
+    }
+};
+
+class TextOverlayManager
+{
+public:
+
+    std::vector<textOverlay> texts;
+    void handleTexts()
+    {
+        for(auto &text : texts)
+        {
+            text.logic();
+
+            if(text.fakeShadow)
+            {
+                shapes.createText(sf::Vector2f(text.pos.x-1,text.pos.y-1),text.size,sf::Color::Black,text.text);
+                shapes.createText(sf::Vector2f(text.pos.x+1,text.pos.y+1),text.size,sf::Color::Black,text.text);
+            }
+            shapes.createText(text.pos,text.size,text.color,text.text);
+        }
+        AnyDeletes(texts);
+    }
+};
+TextOverlayManager textOverlayManager;
+
+
 class Weapon
 {
 public:
@@ -821,7 +880,15 @@ public:
     float healthMax;
     bool affectHealth(float amount)
     {
-        health -= amount;
+        float finalAmount = amount-(amount*getArmorReduction());
+
+        health -= finalAmount;
+
+        textOverlay tOver;
+        tOver.text = std::to_string((int) finalAmount);
+        tOver.pos = sf::Vector2f(pos.x+random(-10,10),pos.y-10+random(-10,10));
+        textOverlayManager.texts.push_back(tOver);
+
         if(health <= 0)
             return true;
 
@@ -831,7 +898,7 @@ public:
     float getArmorReduction()
     {
         float baseMulti = 1;
-        float Multi = 0;
+        float Multi = armorReduction;
 
         for(auto &trait : traits)
         {
@@ -1015,6 +1082,7 @@ public:
         alive = true;
         healthMax = 100;
         health = healthMax;
+        armorReduction = 0;
         staminaMax = 1000;
         stamina = staminaMax;
 
@@ -1990,11 +2058,11 @@ public:
             enemy.creature = true;
             enemy.imageID = rangeLight;
 
-            enemy.moveSpeed = 2;
+            enemy.moveSpeed = 1.5;
             enemy.healthMax = 100;
             enemy.health = enemy.getHealthMax();
             //enemy.rotationSpeed
-            //enemy.armorReduction = 0.2;
+            enemy.armorReduction = 0.2;
 
             enemy.characterClass = characterClassManager.getCharacterClass(CharacterClass::EnemyLightRange);
 
@@ -4639,6 +4707,8 @@ void renderGame()
     drawPlayers();
 
     drawAttacks();
+
+    textOverlayManager.handleTexts();
 
     drawPlayerAttackCooldowns();
 
