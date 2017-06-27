@@ -3501,6 +3501,8 @@ void drawLoadingText(std::string text)
     richText.setOrigin(richText.getLocalBounds().width/2,richText.getLocalBounds().height/2);
 
     window.draw(richText);
+    window.display();
+    window.clear();
 }
 
 void jobsMenu()
