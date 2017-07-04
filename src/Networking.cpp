@@ -21,13 +21,14 @@ TODO: Add proper client-side connection shutdown
 
 Profile::Profile()
 {
-    name = "Guest";
+    name = "Guest"+std::to_string(random(100,1000));
     credits = 0;
     pix = 0;
     enteredStringAimer = 0;
 }
 Profile myProfile;
 
+std::vector<Profile> profileStorage;
 
 namespace network
 {

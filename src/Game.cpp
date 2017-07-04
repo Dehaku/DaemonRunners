@@ -1192,6 +1192,9 @@ public:
             gvars::view1.setCenter(player.pos);
         }
 
+        if(network::chatting)
+            return;
+
         { // Movement Code
 
             float xMovement = 0;
@@ -1392,7 +1395,7 @@ bool visionCheck(sf::Vector2f startPos, sf::Vector2f endPos)
     bool done = false;
     while(!done)
     {
-        if(inputState.key[Key::Tab])
+        if(!network::chatting && inputState.key[Key::Tab])
             shapes.createCircle(tracePos.x,tracePos.y,3,sf::Color::Green);
 
         if(math::distance(tracePos,endPos) <= accuracy)
@@ -2256,7 +2259,7 @@ void spawnLogic()
     }
 
 
-    if(inputState.key[Key::BackSpace].time == 1)
+    if(!network::chatting && inputState.key[Key::BackSpace].time == 1)
         spawnControlManager.pathSpawners();
 
     if(oneSecondPassed)
@@ -2355,7 +2358,7 @@ sf::Vector2f bulletAttack(Attack &attack, Player &owner, sf::Vector2f attackPos,
     bool done = false;
     while(!done)
     {
-        if(inputState.key[Key::Tab])
+        if(!network::chatting && inputState.key[Key::Tab])
             shapes.createCircle(tracePos.x,tracePos.y,3,sf::Color::Green);
 
         if(math::distance(tracePos,attackPos) <= accuracy)
@@ -3064,7 +3067,7 @@ void clientPacketManager::handlePackets()
 
             std::cout << "Requesting initialization\n";
             sf::Packet requestPacket;
-            requestPacket << sf::Uint8(ident::initialization) << myProfile.ID;
+            requestPacket << sf::Uint8(ident::initialization) << myProfile.ID << myProfile.name;
             serverSocket.send(requestPacket);
         }
     }
@@ -3103,6 +3106,14 @@ void serverPacketManager::handlePackets()
         else if(type == sf::Uint8(ident::initialization))
         {
             std::cout << "Initialization 'Request' received from " << int(currentPacket.sender->id) << std::endl;
+
+            Profile profile;
+            packet >> profile.ID;
+            packet >> profile.name;
+
+            profileStorage.push_back(profile);
+
+
             sf::Packet sendPacket;
 
             // Send the same type back.
@@ -3562,7 +3573,7 @@ void jobsMenu()
 
     }
 
-    if(inputState.key[Key::X].time == 1)
+    if(!network::chatting && inputState.key[Key::X].time == 1)
     {
         needsWorld = true;
         enemyManager.enemies.clear();
@@ -3815,6 +3826,20 @@ void runnersMenu()
 
 }
 
+void multiplayerMenu()
+{
+    sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
+    sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
+
+    shapes.createText(300,200,15,sf::Color::White,(std::string)"To host, type '/host' \n"
+                      + "To join, type '/connect [IP] [Port]' \n"
+                      + "Example; /connect 127.0.0.1 23636"
+                      );
+
+
+    drawChat();
+}
+
 void drawSubMain()
 {
 
@@ -3838,6 +3863,7 @@ void drawSubMain()
     if(stateTracker.currentState == stateTracker.multiplayer)
     {
         shapes.createText(500,150,20,sf::Color::Cyan,"Multiplayer",&gvars::hudView);
+        multiplayerMenu();
     }
     if(stateTracker.currentState == stateTracker.profile)
     {
@@ -4048,7 +4074,7 @@ void generalFunctions()
         sf::sleep(sf::seconds(1));
 
 
-    if(inputState.key[Key::Y].time == 1)
+    if(!network::chatting && inputState.key[Key::Y].time == 1)
         worldManager.currentWorld.printWalkables();
 
 
@@ -4302,7 +4328,7 @@ void drawWorld()
         if(chunk.bonusChunk)
             chunkColor = sf::Color(200,250,200);
 
-        if(inputState.key[Key::Comma])
+        if(!network::chatting && inputState.key[Key::Comma])
         {
 
 
@@ -4589,7 +4615,7 @@ void drawEnemyInfo()
 void drawPathFinder()
 {
 
-    if(inputState.key[Key::Space].time == 1)
+    if(!network::chatting && inputState.key[Key::Space].time == 1)
     {
         std::cout << "Attepting to make a Path. \n";
         pathCon.storedPath.clear();
@@ -4599,7 +4625,7 @@ void drawPathFinder()
     }
 
 
-    if(inputState.key[Key::T])
+    if(!network::chatting && inputState.key[Key::P])
     {
         pathCon.drawStoredPath();
 
@@ -4641,12 +4667,42 @@ void drawPathFinder()
 
 }
 
+void drawConnectedProfileHUD()
+{
+
+    int hudxPos = 970;
+    int hudyPos = 210;
+
+    shapes.createSquare(hudxPos,hudyPos,hudxPos+165,hudyPos+(14*(1+profileStorage.size())),sf::Color(150,150,150,100),1,sf::Color(150,150,150,150),&gvars::hudView);
+
+
+    if(true == false && inputState.key[Key::G].time == 1)
+    {
+        Profile profile;
+        profile.name = "Guest"+std::to_string(random(100,1000));
+        profile.ID = random(1,100);
+        profileStorage.push_back(profile);
+    }
+
+    std::string profileReadout;
+    for(auto &profile : profileStorage)
+    {
+        profileReadout.append(profile.name);
+        profileReadout.append("("+std::to_string(profile.ID)+")");
+        profileReadout.append("\n");
+
+    }
+    shapes.createText(hudxPos,hudyPos,12,sf::Color::White,profileReadout,&gvars::hudView);
+
+
+}
+
 void renderGame()
 {
 
     drawWorld();
 
-    if(inputState.key[Key::E])
+    if(!network::chatting && inputState.key[Key::E])
         worldManager.drawWalkableTiles();
 
     enemyManager.drawEnemies();
@@ -4670,10 +4726,12 @@ void renderGame()
 
     chatStuffs();
 
+    drawConnectedProfileHUD();
 
 
 
-    if(inputState.key[Key::Space].time == 1)
+
+    if(!network::chatting && inputState.key[Key::Space].time == 1)
     {
         gvars::currentx = 20;
         gvars::currenty = 20;
@@ -4781,9 +4839,9 @@ void runServerStuffs()
             cPM.handlePackets();
         }
 
-        if(inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time == 0)
+        if(!network::chatting && inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time == 0)
             clientSendingPing();
-        if(inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time >= 1)
+        if(!network::chatting && inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time >= 1)
             for(int i = 0; i != 10; i++)
                 clientSendingPing();
     }
@@ -4796,13 +4854,13 @@ void runServerStuffs()
             sPM.handlePackets();
         }
 
-        if(inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time == 0)
+        if(!network::chatting && inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time == 0)
             serverPingAll();
-        if(inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time >= 1)
+        if(!network::chatting && inputState.key[Key::V].time == 1 && inputState.key[Key::LShift].time >= 1)
             for(int i = 0; i != 10; i++)
                 serverPingAll();
 
-        if(inputState.key[Key::B].time == 1)
+        if(!network::chatting && inputState.key[Key::B].time == 1)
             std::cout << "Clients: " << clientCount() << std::endl;
 
     }
@@ -4859,7 +4917,7 @@ void runServerStuffs()
     }
 
 
-    if(inputState.key[Key::X].time == 1)
+    if(!network::chatting && inputState.key[Key::X].time == 1)
         std::cout << "Breakin console. \n";
 
 
@@ -4870,7 +4928,7 @@ void runServerStuffs()
 
 void spawning()
 {
-    if(inputState.key[Key::LShift] && inputState.key[Key::R].time == 1)
+    if(!network::chatting && inputState.key[Key::LShift] && inputState.key[Key::R].time == 1)
     {
         enemyManager.makeEnemy(gvars::mousePos);
     }

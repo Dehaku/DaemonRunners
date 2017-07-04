@@ -20,12 +20,15 @@ public:
     sf::Uint8 ID;
     sf::Uint32 credits;
     sf::Uint32 pix;
+    sf::Uint32 lastPing;
     std::vector<std::string> enteredStrings;
     unsigned int enteredStringAimer;
 
     Profile();
 };
 extern Profile myProfile;
+
+extern std::vector<Profile> profileStorage;
 
 namespace network
 {
