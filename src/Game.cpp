@@ -3285,6 +3285,29 @@ void serverPacketManager::handlePackets()
             packet >> currentPacket.sender->activity;
         }
 
+        else if(type == sf::Uint8(ident::voteYes))
+        {
+            int jobId;
+            packet >> jobId;
+            for(auto &job : jobManager.jobs)
+            {
+                if(job.id == jobId)
+                    job.yesVotes++;
+            }
+        }
+
+        else if(type == sf::Uint8(ident::voteNo))
+        {
+            int jobId;
+            packet >> jobId;
+            for(auto &job : jobManager.jobs)
+            {
+                if(job.id == jobId)
+                    job.noVotes++;
+            }
+        }
+
+
     }
     packets.clear();
 }
@@ -3783,6 +3806,15 @@ void jobsMenu()
                         job.yesVotes++;
                         myProfile.canVoteYes = false;
                     }
+
+                    else if(myProfile.canVoteYes && network::client)
+                    {
+                        sf::Packet packet;
+                        packet << sf::Uint8(ident::voteYes) << sf::Uint32(job.id);
+                        serverSocket.send(packet);
+                        job.yesVotes++;
+                        myProfile.canVoteYes = false;
+                    }
                 }
 
             }
@@ -3795,6 +3827,14 @@ void jobsMenu()
                 {
                     if(myProfile.canVoteNo && !network::client)
                     {
+                        job.noVotes++;
+                        myProfile.canVoteNo = false;
+                    }
+                    else if(myProfile.canVoteNo && network::client)
+                    {
+                        sf::Packet packet;
+                        packet << sf::Uint8(ident::voteNo) << sf::Uint32(job.id);
+                        serverSocket.send(packet);
                         job.noVotes++;
                         myProfile.canVoteNo = false;
                     }

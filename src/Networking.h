@@ -73,6 +73,8 @@ namespace ident
         clientInfoRequest,
         clientChangedName,
         updatingJobList,
+        voteYes,
+        voteNo
 
     };
 }
