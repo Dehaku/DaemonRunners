@@ -74,7 +74,8 @@ namespace ident
         clientChangedName,
         updatingJobList,
         voteYes,
-        voteNo
+        voteNo,
+        worldCreation
 
     };
 }

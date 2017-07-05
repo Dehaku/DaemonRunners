@@ -11,6 +11,23 @@ StateTracker::StateTracker()
 StateTracker stateTracker;
 
 
+void drawLoadingText(std::string text)
+{
+    sfe::RichText richText;
+    richText.setCharacterSize(20);
+    richText.setFont(gvars::defaultFont);
+    richText.setPosition(300+RESOLUTION.x/2,300+RESOLUTION.y/2);
+
+    richText << sf::Color::White << text;
+
+    richText.setOrigin(richText.getLocalBounds().width/2,richText.getLocalBounds().height/2);
+
+    window.draw(richText);
+    window.display();
+    window.clear();
+}
+
+
 class RunnerJob
 {
 public:
@@ -3066,6 +3083,21 @@ bool chatCommand(std::string input)
     return false;
 }
 
+void GenWorldStuffs()
+{
+    drawLoadingText("Generating Spawners");
+    spawnControlManager.setupSpawners();
+
+    std::cout << "Building Chunk Images \n";
+    drawLoadingText("Generating Chunk Images");
+    for(auto &chunk : worldManager.currentWorld.chunks)
+        chunk.buildChunkImage();
+
+    playerManager.makePlayer(sf::Vector2f(worldManager.currentWorld.chunks.front().pos.x+(32*16),worldManager.currentWorld.chunks.front().pos.y+(32*16)));
+
+    drawLoadingText("Generating Initial Paths");
+    spawnControlManager.pathSpawners();
+}
 
 void clientPacketManager::handlePackets()
 {
@@ -3184,6 +3216,41 @@ void clientPacketManager::handlePackets()
 
                 jobManager.jobs.push_back(job);
             }
+        }
+
+        else if(type == sf::Uint8(ident::worldCreation))
+        {
+
+            drawLoadingText("Receiving World");
+
+            int chunkCount;
+            packet >> chunkCount;
+
+
+
+            for(int i = 0; i != chunkCount; i++)
+            {
+                WorldChunk chunk;
+
+                packet >> chunk.pos.x;
+                packet >> chunk.pos.y;
+
+                for(int i = 0; i != 32; i++)
+                    for(int t = 0; t != 32; t++)
+                {
+
+                    int tileID;
+                    packet >> tileID;
+                    buildTile(chunk.tiles[i][t],tileID);
+
+
+                }
+
+                worldManager.currentWorld.chunks.push_back(chunk);
+            }
+
+            GenWorldStuffs();
+
         }
 
     }
@@ -3689,21 +3756,29 @@ void simulationMenu()
 
 }
 
-void drawLoadingText(std::string text)
+void sendWorldToClients()
 {
-    sfe::RichText richText;
-    richText.setCharacterSize(20);
-    richText.setFont(gvars::defaultFont);
-    richText.setPosition(300+RESOLUTION.x/2,300+RESOLUTION.y/2);
+    sf::Packet packet;
+    packet << sf::Uint8(ident::worldCreation);
 
-    richText << sf::Color::White << text;
 
-    richText.setOrigin(richText.getLocalBounds().width/2,richText.getLocalBounds().height/2);
+    int chunkCount = worldManager.currentWorld.chunks.size();
+    packet << sf::Uint32(chunkCount);
+    for(auto &chunk : worldManager.currentWorld.chunks)
+    {
+        packet << sf::Uint32(chunk.pos.x) << sf::Uint32(chunk.pos.y);
+        for(int i = 0; i != 32; i++)
+            for(int t = 0; t != 32; t++)
+        {
+            packet << sf::Uint32(chunk.tiles[i][t].type);
+        }
+    }
 
-    window.draw(richText);
-    window.display();
-    window.clear();
+
+    sendToAllClients(packet);
 }
+
+
 
 void jobsMenu()
 {
@@ -3723,20 +3798,11 @@ void jobsMenu()
         RunnerJob & job = *jobManager.jobSelected;
         drawLoadingText("Generating World");
         worldManager.generateWorld(job.worldSize,100);
-        drawLoadingText("Generating Spawners");
-        spawnControlManager.setupSpawners();
 
-        std::cout << "Building Chunk Images \n";
-        drawLoadingText("Generating Chunk Images");
-        for(auto &chunk : worldManager.currentWorld.chunks)
-            chunk.buildChunkImage();
+        drawLoadingText("Sending world to Clients");
+        sendWorldToClients();
 
-        playerManager.makePlayer(sf::Vector2f(worldManager.currentWorld.chunks.front().pos.x+(32*16),worldManager.currentWorld.chunks.front().pos.y+(32*16)));
-
-        drawLoadingText("Generating Initial Paths");
-        spawnControlManager.pathSpawners();
-
-
+        GenWorldStuffs();
     }
 
     if(!network::chatting && inputState.key[Key::X].time == 1)
