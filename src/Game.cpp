@@ -3610,11 +3610,71 @@ void drawLoadingText(std::string text)
     window.clear();
 }
 
+class RunnerJob
+{
+public:
+    int worldSize;
+    std::string jobType;
+    std::string description;
+    int difficulty;
+    int yesVotes;
+    int noVotes;
+    int id;
+
+    RunnerJob()
+    {
+        worldSize = random(5,20);
+        jobType = "Core";
+        description = "Destroy the Corrupted Heart that fuels the vile forces.";
+        difficulty = (worldSize*1.5)+random(1,10);
+        yesVotes = 0;
+        noVotes = 0;
+    }
+};
+
+class JobManager
+{
+public:
+    int worldMaxSize;
+    int worldMinSize;
+
+    int jobIDs;
+
+    std::list<RunnerJob> jobs;
+
+
+    void generateJobs()
+    {
+        // If only the world utilized this function, I probably wouldn't be here right now.
+
+        int jobAmount = random(3,5);
+        for(int i = 0; i != jobAmount; i++)
+        {
+            RunnerJob job;
+            job.id = jobIDs++;
+            jobs.push_back(job);
+        }
+    }
+
+    JobManager()
+    {
+        jobIDs = 0;
+    }
+};
+JobManager jobManager;
+
+
+
 void jobsMenu()
 {
     sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
     sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
-    static bool needsWorld = true;
+    static bool needsWorld = false;
+
+    if(jobManager.jobs.empty())
+        jobManager.generateJobs();
+
+
     if(needsWorld)
     {
         needsWorld = false;
@@ -3644,6 +3704,62 @@ void jobsMenu()
         spawnControlManager.spawnControllers.clear();
     }
 
+
+    { // Drawing the jobs
+
+        sf::Vector2f HUDPos(-141, 254);
+        int yOffset = 0;
+
+        for(auto &job : jobManager.jobs)
+        {
+            std::string jobText;
+            jobText.append("Job: ");
+            jobText.append(job.jobType);
+            jobText.append(", Size: ");
+            jobText.append(std::to_string(job.worldSize));
+            jobText.append(", Difficulty: ");
+            jobText.append(std::to_string(job.difficulty));
+            jobText.append("\n  ");
+            jobText.append(job.description);
+            jobText.append("\n  ");
+            jobText.append("Votes: ");
+            jobText.append(std::to_string(job.yesVotes));
+            jobText.append("/");
+            jobText.append(std::to_string(job.noVotes));
+            shapes.createText(HUDPos.x+60,HUDPos.y+(90*yOffset),15,sf::Color::White,jobText, &gvars::hudView);
+
+            int activateJobButt = -50;
+            if(!network::client)
+            {
+                activateJobButt = shapes.createImageButton(sf::Vector2f(-96, 264+(90*yOffset)),*arrowButton,"",90,&gvars::hudView);
+            }
+
+            int yesButt = shapes.createImageButton(sf::Vector2f(-2, 319+(90*yOffset)),*arrowButton,"",0,&gvars::hudView);
+            shapes.shapes.back().maincolor = sf::Color::Green;
+            int noButt = shapes.createImageButton(sf::Vector2f(-2+30, 319+(90*yOffset)),*arrowButton,"",180,&gvars::hudView);
+            shapes.shapes.back().maincolor = sf::Color::Red;
+
+            yOffset++;
+
+            if(!network::client && shapes.shapeHovered(activateJobButt))
+            {
+                shapes.createText(gvars::mousePos,15,sf::Color::Cyan,"   Enter Map!");
+            }
+
+            if(shapes.shapeHovered(yesButt))
+            {
+                shapes.createText(gvars::mousePos,15,sf::Color::Green,"   Vote Yes!");
+            }
+
+            if(shapes.shapeHovered(noButt))
+            {
+                shapes.createText(gvars::mousePos,15,sf::Color::Red,"   Vote No!");
+            }
+
+        }
+
+
+    }
 
     drawChat();
     drawFPSandData();
