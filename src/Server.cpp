@@ -107,7 +107,9 @@ void serverListen()
                         selector.remove(*client.socket);
                         delete client.socket;
                         client.toDelete = true;
-                        continue;
+                        // TODO: Warning, this may cause issues with network stability.
+                        AnyDeletes(clients);
+                        break;
                     }
 
                     if (status == sf::Socket::Error)
