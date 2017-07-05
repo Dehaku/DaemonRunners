@@ -11,7 +11,61 @@ StateTracker::StateTracker()
 StateTracker stateTracker;
 
 
+class RunnerJob
+{
+public:
+    int worldSize;
+    std::string jobType;
+    std::string description;
+    int difficulty;
+    int yesVotes;
+    int noVotes;
+    int id;
 
+    RunnerJob()
+    {
+        worldSize = random(5,20);
+        jobType = "Core";
+        description = "Destroy the Corrupted Heart that fuels the vile forces.";
+        difficulty = (worldSize*1.5)+random(1,10);
+        yesVotes = 0;
+        noVotes = 0;
+    }
+};
+
+class JobManager
+{
+public:
+    int worldMaxSize;
+    int worldMinSize;
+
+    RunnerJob * jobSelected;
+
+    int jobIDs;
+
+    std::list<RunnerJob> jobs;
+
+
+    void generateJobs()
+    {
+        // If only the world utilized this function, I probably wouldn't be here right now.
+
+        int jobAmount = random(3,5);
+        for(int i = 0; i != jobAmount; i++)
+        {
+            RunnerJob job;
+            job.id = jobIDs++;
+            jobs.push_back(job);
+        }
+    }
+
+    JobManager()
+    {
+        jobSelected = nullptr;
+        jobIDs = 0;
+    }
+};
+JobManager jobManager;
 
 class Weapon
 {
@@ -3114,6 +3168,24 @@ void clientPacketManager::handlePackets()
             serverSocket.send(sendPacket);
         }
 
+        else if (type == sf::Uint8(ident::updatingJobList))
+        {
+            jobManager.jobs.clear();
+
+            RunnerJob job;
+            int jobAmount;
+            packet >> jobAmount;
+
+            for(int i = 0; i != jobAmount; i++)
+            {
+                packet >> job.id >> job.jobType >> job.description
+                                    >> job.worldSize >> job.yesVotes
+                                     >> job.noVotes >> job.difficulty;
+
+                jobManager.jobs.push_back(job);
+            }
+        }
+
     }
     packets.clear();
 }
@@ -3610,71 +3682,13 @@ void drawLoadingText(std::string text)
     window.clear();
 }
 
-class RunnerJob
-{
-public:
-    int worldSize;
-    std::string jobType;
-    std::string description;
-    int difficulty;
-    int yesVotes;
-    int noVotes;
-    int id;
-
-    RunnerJob()
-    {
-        worldSize = random(5,20);
-        jobType = "Core";
-        description = "Destroy the Corrupted Heart that fuels the vile forces.";
-        difficulty = (worldSize*1.5)+random(1,10);
-        yesVotes = 0;
-        noVotes = 0;
-    }
-};
-
-class JobManager
-{
-public:
-    int worldMaxSize;
-    int worldMinSize;
-
-    RunnerJob * jobSelected;
-
-    int jobIDs;
-
-    std::list<RunnerJob> jobs;
-
-
-    void generateJobs()
-    {
-        // If only the world utilized this function, I probably wouldn't be here right now.
-
-        int jobAmount = random(3,5);
-        for(int i = 0; i != jobAmount; i++)
-        {
-            RunnerJob job;
-            job.id = jobIDs++;
-            jobs.push_back(job);
-        }
-    }
-
-    JobManager()
-    {
-        jobSelected = nullptr;
-        jobIDs = 0;
-    }
-};
-JobManager jobManager;
-
-
-
 void jobsMenu()
 {
     sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
     sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
     static bool needsWorld = false;
 
-    if(jobManager.jobs.empty())
+    if(!network::client && jobManager.jobs.empty())
         jobManager.generateJobs();
 
 
@@ -5074,12 +5088,29 @@ void collectClientInformation()
     sendToAllClients(packet);
 }
 
+void updateClientsJobLists()
+{
+    sf::Packet packet;
+
+    packet << sf::Uint8(ident::updatingJobList);
+
+    packet << sf::Uint32(jobManager.jobs.size());
+    for(auto &job : jobManager.jobs)
+    {
+        packet << sf::Uint32(job.id) << job.jobType << job.description << sf::Uint32(job.worldSize) << sf::Uint32(job.yesVotes )
+                             << sf::Uint32(job.noVotes) << sf::Uint32(job.difficulty);
+    }
+
+    sendToAllClients(packet);
+}
+
 void runOneSecond()
 {
     if(network::server)
     {
         collectPings();
         collectClientInformation();
+        updateClientsJobLists();
 
         updateClientProfiles();
     }

@@ -71,7 +71,8 @@ namespace ident
         profileUpdates,
         pingRequest,
         clientInfoRequest,
-        clientChangedName
+        clientChangedName,
+        updatingJobList,
 
     };
 }
