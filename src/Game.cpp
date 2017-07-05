@@ -2,6 +2,7 @@
 
 #include <iomanip>
 
+
 StateTracker::StateTracker()
 {
     lastState = mainMenu;
@@ -3070,6 +3071,31 @@ void clientPacketManager::handlePackets()
             requestPacket << sf::Uint8(ident::initialization) << myProfile.ID << myProfile.name;
             serverSocket.send(requestPacket);
         }
+
+
+        else if(type == sf::Uint8(ident::profileUpdates) )
+        {
+            int profileAmount;
+            packet >> profileAmount;
+            std::cout << "Received " << profileAmount << " updates. \n";
+            profileStorage.clear();
+            ClientPackage profile;
+            for(int i = 0; i != profileAmount; i++)
+            {
+                packet >> profile.id >> profile.userName >> profile.lastPing;
+                profileStorage.push_back(profile);
+            }
+        }
+
+        else if(type == sf::Uint8(ident::pingRequest) )
+        {
+            std::cout << "Ping \n";
+            sf::Packet sendPacket;
+            sendPacket << sf::Uint8(ident::pingRequest);
+            serverSocket.send(sendPacket);
+        }
+
+
     }
     packets.clear();
 }
@@ -3107,9 +3133,9 @@ void serverPacketManager::handlePackets()
         {
             std::cout << "Initialization 'Request' received from " << int(currentPacket.sender->id) << std::endl;
 
-            Profile profile;
-            packet >> profile.ID;
-            packet >> profile.name;
+            ClientPackage profile;
+            packet >> profile.id;
+            packet >> profile.userName;
 
             profileStorage.push_back(profile);
 
@@ -3148,6 +3174,14 @@ void serverPacketManager::handlePackets()
 
             currentPacket.sender->socket->send(returnPacket);
         }
+
+        else if(type == sf::Uint8(ident::pingRequest))
+        {
+            currentPacket.sender->lastPing = currentPacket.sender->pingTimer.getElapsedTime().asMilliseconds();
+
+            std::cout << "ping: " << currentPacket.sender->lastPing<< std::endl;
+        }
+
     }
     packets.clear();
 }
@@ -3155,7 +3189,6 @@ void serverPacketManager::handlePackets()
 void gameSetup()
 {
     texturemanager.init();
-
 
 }
 
@@ -4678,17 +4711,18 @@ void drawConnectedProfileHUD()
 
     if(true == false && inputState.key[Key::G].time == 1)
     {
-        Profile profile;
-        profile.name = "Guest"+std::to_string(random(100,1000));
-        profile.ID = random(1,100);
+        ClientPackage profile;
+        profile.userName = "Guest"+std::to_string(random(100,1000));
+        profile.id = random(1,100);
         profileStorage.push_back(profile);
     }
 
     std::string profileReadout;
     for(auto &profile : profileStorage)
     {
-        profileReadout.append(profile.name);
-        profileReadout.append("("+std::to_string(profile.ID)+")");
+        profileReadout.append(profile.userName);
+        profileReadout.append("("+std::to_string(profile.id)+")");
+        profileReadout.append("("+std::to_string(profile.lastPing)+")");
         profileReadout.append("\n");
 
     }
@@ -4790,8 +4824,39 @@ sf::Thread serverListenThread(&serverListen);
 sf::Thread clientListenThread(&clientListen);
 
 
+void updateClientProfiles()
+{
+    sf::Packet packet;
+    packet << sf::Uint8(ident::profileUpdates);
+    packet << sf::Uint32(profileStorage.size());
+    for(auto &profile : profileStorage)
+    {
+        packet << profile.id << profile.userName << profile.lastPing;
+    }
+    sendToAllClients(packet);
+}
+
+void collectPings()
+{
+    sf::Packet packet;
+
+    packet << sf::Uint8(ident::pingRequest);
+    for(auto &client : clients)
+    {
+        client.pingTimer.restart();
+    }
+
+    sendToAllClients(packet);
+}
+
 void runOneSecond()
 {
+    if(network::server)
+    {
+        collectPings();
+
+        updateClientProfiles();
+    }
 
 }
 

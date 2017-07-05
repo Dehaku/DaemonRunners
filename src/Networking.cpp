@@ -28,7 +28,7 @@ Profile::Profile()
 }
 Profile myProfile;
 
-std::vector<Profile> profileStorage;
+std::vector<ClientPackage> profileStorage;
 
 namespace network
 {

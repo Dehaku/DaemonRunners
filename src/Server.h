@@ -20,6 +20,8 @@ public:
     sf::Uint8 id;
     sf::Uint32 credits;
     sf::Uint32 pix;
+    sf::Uint32 lastPing;
+    sf::Clock pingTimer;
 
 
 

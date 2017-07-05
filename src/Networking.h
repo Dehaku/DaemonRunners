@@ -28,7 +28,7 @@ public:
 };
 extern Profile myProfile;
 
-extern std::vector<Profile> profileStorage;
+extern std::vector<ClientPackage> profileStorage;
 
 namespace network
 {
@@ -69,7 +69,10 @@ namespace ident
         organismBorn,
         floraInitialization,
         floraUpdate,
-        disconnecting
+        disconnecting,
+        profileUpdates,
+        pingRequest,
+
     };
 }
 
