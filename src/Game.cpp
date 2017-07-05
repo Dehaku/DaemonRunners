@@ -2869,12 +2869,21 @@ bool chatCommand(std::string input)
 
     if(elements[0] == "/name" || elements[0] == "/setname" || elements[0] == "/nick")
     {
-        chatBox.addChat("Server: " + myProfile.userName + " has changed their name to " + elements[1], goodColor);
+        if(!network::client)
+            chatBox.addChat("Server: " + myProfile.userName + " has changed their name to " + elements[1], goodColor);
+
         myProfile.userName = elements[1];
         if(elements[1] == "Lithi" || elements[1] == "Biocava" || elements[1] == "Sneaky" || elements[1] == "SneakySnake")
             chatBox.addChat("Server: Ooo, Ooo, I like you!", warmColor);
         if(elements[1] == "Dehaku")
             chatBox.addChat("Server: Hey, that's my masters name!", warmColor);
+
+        if(network::client)
+        {
+            sf::Packet packet;
+            packet << sf::Uint8(ident::clientChangedName) << myProfile.userName;
+            serverSocket.send(packet);
+        }
         return true;
     }
 
@@ -3176,6 +3185,18 @@ void serverPacketManager::handlePackets()
             currentPacket.sender->lastPing = currentPacket.sender->pingTimer.getElapsedTime().asMilliseconds();
 
             std::cout << "ping: " << currentPacket.sender->lastPing<< std::endl;
+        }
+
+        else if(type == sf::Uint8(ident::clientChangedName))
+        {
+            std::string oldName = currentPacket.sender->userName;
+            packet >> currentPacket.sender->userName;
+
+            sf::Packet updatePacket;
+            std::string sendText = "Server: " + oldName + " changed their name to " + currentPacket.sender->userName + "!";
+            updatePacket << sf::Uint8(ident::textMessage) << sendText;
+            sendToAllClients(updatePacket);
+
         }
 
     }
@@ -3891,20 +3912,28 @@ void drawSubMain()
 
     if(stateTracker.currentState == stateTracker.multiplayer)
     {
+        myProfile.activity = "Menu: Multiplayer";
+
         shapes.createText(500,150,20,sf::Color::Cyan,"Multiplayer",&gvars::hudView);
         multiplayerMenu();
     }
     if(stateTracker.currentState == stateTracker.profile)
     {
+        myProfile.activity = "Menu: Profile";
+
         shapes.createText(500,150,20,sf::Color::Cyan,"Profile",&gvars::hudView);
 
         shapes.createText(300,200,12,sf::Color::Cyan,"Name: " + myProfile.userName,&gvars::hudView);
         shapes.createText(300,215,10,sf::Color::Cyan,"You can change your name while playing by pressing Enter, then /setname yourname",&gvars::hudView);
         shapes.createText(300,230,12,sf::Color::Cyan,"Credits: " + std::to_string(myProfile.credits),&gvars::hudView);
         shapes.createText(300,245,12,sf::Color::Cyan,"Pix: " + std::to_string(myProfile.pix),&gvars::hudView);
+
+
     }
     if(stateTracker.currentState == stateTracker.options)
     {
+        myProfile.activity = "Menu: Options";
+
         shapes.createText(500,150,20,sf::Color::Cyan,"Options",&gvars::hudView);
 
         sf::Vector2f textPos(500,200);
@@ -4000,39 +4029,46 @@ void drawSubMain()
     }
     if(stateTracker.currentState == stateTracker.credits)
     {
+        myProfile.activity = "Menu: Credits";
         shapes.createText(500,150,20,sf::Color::Cyan,"Credits",&gvars::hudView);
     }
 
     if(stateTracker.currentState == stateTracker.quests)
     {
+        myProfile.activity = "Menu: Jobs";
         drawHUD();
         shapes.createText(500,210,20,sf::Color::Cyan,"Jobs",&gvars::hudView);
         jobsMenu();
     }
     if(stateTracker.currentState == stateTracker.evolution)
     {
+        myProfile.activity = "Menu: Runners";
         drawHUD();
         shapes.createText(500,210,20,sf::Color::Cyan,"Runners",&gvars::hudView);
         runnersMenu();
     }
     if(stateTracker.currentState == stateTracker.simulation)
     {
+        myProfile.activity = "Menu: Simulation";
         drawHUD();
         shapes.createText(500,210,20,sf::Color::Cyan,"Simulation",&gvars::hudView);
         simulationMenu();
     }
     if(stateTracker.currentState == stateTracker.contest)
     {
+        myProfile.activity = "Menu: Contests";
         drawHUD();
         shapes.createText(500,210,20,sf::Color::Cyan,"Contests",&gvars::hudView);
     }
     if(stateTracker.currentState == stateTracker.shops)
     {
+        myProfile.activity = "Menu: Shops";
         drawHUD();
         shapes.createText(500,210,20,sf::Color::Cyan,"Shops",&gvars::hudView);
     }
     if(stateTracker.currentState == stateTracker.archive)
     {
+        myProfile.activity = "Menu: Archives";
         drawHUD();
         shapes.createText(500,210,20,sf::Color::Cyan,"Archives",&gvars::hudView);
     }
@@ -4862,6 +4898,15 @@ void collectPings()
     {
         client.pingTimer.restart();
     }
+
+    sendToAllClients(packet);
+}
+
+void collectClientInformation()
+{
+    sf::Packet packet;
+
+    packet << sf::Uint8(ident::clientInfoRequest);
 
     sendToAllClients(packet);
 }

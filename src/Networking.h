@@ -70,6 +70,8 @@ namespace ident
         disconnecting,
         profileUpdates,
         pingRequest,
+        clientInfoRequest,
+        clientChangedName
 
     };
 }
