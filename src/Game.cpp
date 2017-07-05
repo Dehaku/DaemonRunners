@@ -3104,6 +3104,15 @@ void clientPacketManager::handlePackets()
             serverSocket.send(sendPacket);
         }
 
+        else if(type == sf::Uint8(ident::clientInfoRequest))
+        {
+            sf::Packet sendPacket;
+            sendPacket << sf::Uint8(ident::clientInfoRequest);
+
+            sendPacket << myProfile.activity;
+
+            serverSocket.send(sendPacket);
+        }
 
     }
     packets.clear();
@@ -3197,6 +3206,11 @@ void serverPacketManager::handlePackets()
             updatePacket << sf::Uint8(ident::textMessage) << sendText;
             sendToAllClients(updatePacket);
 
+        }
+
+        else if(type == sf::Uint8(ident::clientInfoRequest))
+        {
+            packet >> currentPacket.sender->activity;
         }
 
     }
@@ -4916,6 +4930,7 @@ void runOneSecond()
     if(network::server)
     {
         collectPings();
+        collectClientInformation();
 
         updateClientProfiles();
     }
