@@ -28,8 +28,6 @@ public:
 };
 extern Profile myProfile;
 
-extern std::vector<ClientPackage> profileStorage;
-
 namespace network
 {
     extern int mainPort;

@@ -3078,12 +3078,12 @@ void clientPacketManager::handlePackets()
             int profileAmount;
             packet >> profileAmount;
             std::cout << "Received " << profileAmount << " updates. \n";
-            profileStorage.clear();
+            clients.clear();
             ClientPackage profile;
             for(int i = 0; i != profileAmount; i++)
             {
                 packet >> profile.id >> profile.userName >> profile.lastPing;
-                profileStorage.push_back(profile);
+                clients.push_back(profile);
             }
         }
 
@@ -3133,12 +3133,8 @@ void serverPacketManager::handlePackets()
         {
             std::cout << "Initialization 'Request' received from " << int(currentPacket.sender->id) << std::endl;
 
-            ClientPackage profile;
-            packet >> profile.id;
-            packet >> profile.userName;
-
-            profileStorage.push_back(profile);
-
+            packet >> currentPacket.sender->id;
+            packet >> currentPacket.sender->userName;
 
             sf::Packet sendPacket;
 
@@ -4706,7 +4702,7 @@ void drawConnectedProfileHUD()
     int hudxPos = 970;
     int hudyPos = 210;
 
-    shapes.createSquare(hudxPos,hudyPos,hudxPos+165,hudyPos+(14*(1+profileStorage.size())),sf::Color(150,150,150,100),1,sf::Color(150,150,150,150),&gvars::hudView);
+    shapes.createSquare(hudxPos,hudyPos,hudxPos+165,hudyPos+(14*(1+clients.size())),sf::Color(150,150,150,100),1,sf::Color(150,150,150,150),&gvars::hudView);
 
 
     if(true == false && inputState.key[Key::G].time == 1)
@@ -4714,11 +4710,11 @@ void drawConnectedProfileHUD()
         ClientPackage profile;
         profile.userName = "Guest"+std::to_string(random(100,1000));
         profile.id = random(1,100);
-        profileStorage.push_back(profile);
+        clients.push_back(profile);
     }
 
     std::string profileReadout;
-    for(auto &profile : profileStorage)
+    for(auto &profile : clients)
     {
         profileReadout.append(profile.userName);
         profileReadout.append("("+std::to_string(profile.id)+")");
@@ -4828,8 +4824,8 @@ void updateClientProfiles()
 {
     sf::Packet packet;
     packet << sf::Uint8(ident::profileUpdates);
-    packet << sf::Uint32(profileStorage.size());
-    for(auto &profile : profileStorage)
+    packet << sf::Uint32(clients.size());
+    for(auto &profile : clients)
     {
         packet << profile.id << profile.userName << profile.lastPing;
     }
