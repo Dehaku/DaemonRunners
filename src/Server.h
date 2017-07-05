@@ -17,11 +17,15 @@ class ClientPackage
 {
 public:
     std::string userName;
+    std::string activity;
     sf::Uint8 id;
     sf::Uint32 credits;
     sf::Uint32 pix;
     sf::Uint32 lastPing;
     sf::Clock pingTimer;
+
+    std::vector<std::string> enteredStrings;
+    unsigned int enteredStringAimer;
 
 
 

@@ -26,7 +26,7 @@ Profile::Profile()
     pix = 0;
     enteredStringAimer = 0;
 }
-Profile myProfile;
+ClientPackage myProfile;
 
 std::vector<ClientPackage> profileStorage;
 

@@ -26,12 +26,12 @@ void clientSendingPing()
 void sendServerMyInfo()
 {
     sf::Packet packet;
-    packet << sf::Uint8(ident::clientID) << myProfile.ID;
+    packet << sf::Uint8(ident::clientID) << myProfile.id;
 
     if (serverSocket.send(packet) != sf::Socket::Done)
         return;
 
-    std::cout << "Sent Server My ID: \"" << int(myProfile.ID) << "\"" << std::endl;
+    std::cout << "Sent Server My ID: \"" << int(myProfile.id) << "\"" << std::endl;
 }
 
 void clientListen()

@@ -17,7 +17,7 @@ ClientPackage::ClientPackage()
     id = 0;
     credits = 100;
     pix = 0;
-
+    activity = "N/A";
 
 
     socket = nullptr;

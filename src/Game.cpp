@@ -2848,7 +2848,7 @@ bool chatCommand(std::string input)
 
         std::string sendText;
         sendText.append("* ");
-        sendText.append(myProfile.name);
+        sendText.append(myProfile.userName);
         sendText.append(" ");
 
         for(unsigned int i = 1; i != elements.size(); i++)
@@ -2869,8 +2869,8 @@ bool chatCommand(std::string input)
 
     if(elements[0] == "/name" || elements[0] == "/setname" || elements[0] == "/nick")
     {
-        chatBox.addChat("Server: " + myProfile.name + " has changed their name to " + elements[1], goodColor);
-        myProfile.name = elements[1];
+        chatBox.addChat("Server: " + myProfile.userName + " has changed their name to " + elements[1], goodColor);
+        myProfile.userName = elements[1];
         if(elements[1] == "Lithi" || elements[1] == "Biocava" || elements[1] == "Sneaky" || elements[1] == "SneakySnake")
             chatBox.addChat("Server: Ooo, Ooo, I like you!", warmColor);
         if(elements[1] == "Dehaku")
@@ -2923,7 +2923,7 @@ bool chatCommand(std::string input)
             chatBox.addChat("Server: Error, You're already connected to " + network::connectedServer, errorColor);
             return false;
         }
-        if(myProfile.name == "Guest")
+        if(myProfile.userName == "Guest")
         {
             chatBox.addChat("Server: Error, please give yourself a name with /setname before attempting to connect.", errorColor);
             return false;
@@ -3061,14 +3061,14 @@ void clientPacketManager::handlePackets()
         else if(type == sf::Uint8(ident::clientID) )
         {
             std::cout << "Received our ID: ";
-            packet >> myProfile.ID;
-            std::cout << int(myProfile.ID) << std::endl;
+            packet >> myProfile.id;
+            std::cout << int(myProfile.id) << std::endl;
 
 
 
             std::cout << "Requesting initialization\n";
             sf::Packet requestPacket;
-            requestPacket << sf::Uint8(ident::initialization) << myProfile.ID << myProfile.name;
+            requestPacket << sf::Uint8(ident::initialization) << myProfile.id << myProfile.userName;
             serverSocket.send(requestPacket);
         }
 
@@ -3082,7 +3082,7 @@ void clientPacketManager::handlePackets()
             ClientPackage profile;
             for(int i = 0; i != profileAmount; i++)
             {
-                packet >> profile.id >> profile.userName >> profile.lastPing;
+                packet >> profile.id >> profile.userName >> profile.lastPing >> profile.activity;
                 clients.push_back(profile);
             }
         }
@@ -3403,7 +3403,7 @@ void drawChat()
     chatText.setCharacterSize(15);
 
     chatText << sf::Color::White
-    << sf::Text::Bold << myProfile.name << ": "
+    << sf::Text::Bold << myProfile.userName << ": "
     << sf::Text::Regular << chatBox.chatString;
 
     // TODO: Enhance the chat to accept ^89 colors and such, ala Toribash.
@@ -3898,7 +3898,7 @@ void drawSubMain()
     {
         shapes.createText(500,150,20,sf::Color::Cyan,"Profile",&gvars::hudView);
 
-        shapes.createText(300,200,12,sf::Color::Cyan,"Name: " + myProfile.name,&gvars::hudView);
+        shapes.createText(300,200,12,sf::Color::Cyan,"Name: " + myProfile.userName,&gvars::hudView);
         shapes.createText(300,215,10,sf::Color::Cyan,"You can change your name while playing by pressing Enter, then /setname yourname",&gvars::hudView);
         shapes.createText(300,230,12,sf::Color::Cyan,"Credits: " + std::to_string(myProfile.credits),&gvars::hudView);
         shapes.createText(300,245,12,sf::Color::Cyan,"Pix: " + std::to_string(myProfile.pix),&gvars::hudView);
@@ -4702,7 +4702,11 @@ void drawConnectedProfileHUD()
     int hudxPos = 970;
     int hudyPos = 210;
 
-    shapes.createSquare(hudxPos,hudyPos,hudxPos+165,hudyPos+(14*(1+clients.size())),sf::Color(150,150,150,100),1,sf::Color(150,150,150,150),&gvars::hudView);
+    int clientSize = clients.size();
+    if(network::server)
+        clientSize++;
+
+    shapes.createSquare(hudxPos,hudyPos,hudxPos+165,hudyPos+(28*(1+clientSize)),sf::Color(150,150,150,100),1,sf::Color(150,150,150,150),&gvars::hudView);
 
 
     if(true == false && inputState.key[Key::G].time == 1)
@@ -4714,11 +4718,24 @@ void drawConnectedProfileHUD()
     }
 
     std::string profileReadout;
+
+    if(network::server)
+    {
+        profileReadout.append(myProfile.userName);
+        profileReadout.append("("+std::to_string(myProfile.id)+")");
+        profileReadout.append("("+std::to_string(myProfile.lastPing)+")");
+        profileReadout.append("\n");
+        profileReadout.append(myProfile.activity);
+        profileReadout.append("\n");
+    }
+
     for(auto &profile : clients)
     {
         profileReadout.append(profile.userName);
         profileReadout.append("("+std::to_string(profile.id)+")");
         profileReadout.append("("+std::to_string(profile.lastPing)+")");
+        profileReadout.append("\n");
+        profileReadout.append(profile.activity);
         profileReadout.append("\n");
 
     }
@@ -4824,10 +4841,14 @@ void updateClientProfiles()
 {
     sf::Packet packet;
     packet << sf::Uint8(ident::profileUpdates);
-    packet << sf::Uint32(clients.size());
+    // +1 because we're sending ourselves to them.
+    packet << sf::Uint32(clients.size()+1);
+
+    packet << myProfile.id << myProfile.userName << sf::Uint32(0) << myProfile.activity;
+
     for(auto &profile : clients)
     {
-        packet << profile.id << profile.userName << profile.lastPing;
+        packet << profile.id << profile.userName << profile.lastPing << profile.activity;
     }
     sendToAllClients(packet);
 }

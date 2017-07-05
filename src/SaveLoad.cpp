@@ -25,7 +25,7 @@ void saveProfile(std::string profileName)
 
 
     std::ofstream outputFile(line.c_str());
-    outputFile << "[name:" << myProfile.name << "]"
+    outputFile << "[name:" << myProfile.userName << "]"
                << "[credits:" << myProfile.credits << "]"
                << "[pix:" << myProfile.pix << "]";
     chatBox.addChat("Profile Saved!");
@@ -40,7 +40,7 @@ void loadProfile(std::string profileName)
         if (!input.is_open())
         {
             std::cout << "No Profile Detected. \n";
-            Profile newProfile;
+            ClientPackage newProfile;
             myProfile = newProfile;
             return;
         }
@@ -52,7 +52,7 @@ void loadProfile(std::string profileName)
             getline(input, line);
 
             // Load the variables!
-            myProfile.name = stringFindString(line,"name:");
+            myProfile.userName = stringFindString(line,"name:");
             myProfile.credits = stringFindNumber(line,"credits:");
             myProfile.pix = stringFindNumber(line,"pix:");
         }

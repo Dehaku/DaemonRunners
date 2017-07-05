@@ -26,7 +26,7 @@ public:
 
     Profile();
 };
-extern Profile myProfile;
+extern ClientPackage myProfile;
 
 namespace network
 {

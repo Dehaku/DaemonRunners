@@ -285,7 +285,7 @@ void handleEvents()
                     sf::UdpSocket socket;
                     sf::Packet ToSend;
                     std::string SendText;
-                    SendText.append(myProfile.name);
+                    SendText.append(myProfile.userName);
                     SendText.append(": ");
                     SendText.append(chatBox.chatString);
 
