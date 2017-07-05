@@ -3638,6 +3638,8 @@ public:
     int worldMaxSize;
     int worldMinSize;
 
+    RunnerJob * jobSelected;
+
     int jobIDs;
 
     std::list<RunnerJob> jobs;
@@ -3658,6 +3660,7 @@ public:
 
     JobManager()
     {
+        jobSelected = nullptr;
         jobIDs = 0;
     }
 };
@@ -3675,12 +3678,14 @@ void jobsMenu()
         jobManager.generateJobs();
 
 
-    if(needsWorld)
+
+
+    if(needsWorld && jobManager.jobSelected != nullptr)
     {
         needsWorld = false;
-
+        RunnerJob & job = *jobManager.jobSelected;
         drawLoadingText("Generating World");
-        worldManager.generateWorld(20,100);
+        worldManager.generateWorld(job.worldSize,100);
         drawLoadingText("Generating Spawners");
         spawnControlManager.setupSpawners();
 
@@ -3744,17 +3749,45 @@ void jobsMenu()
             if(!network::client && shapes.shapeHovered(activateJobButt))
             {
                 shapes.createText(gvars::mousePos,15,sf::Color::Cyan,"   Enter Map!");
+
+                if(inputState.lmbTime == 1)
+                {
+                    jobManager.jobSelected = &job;
+                    needsWorld = true;
+                }
+
             }
 
             if(shapes.shapeHovered(yesButt))
             {
                 shapes.createText(gvars::mousePos,15,sf::Color::Green,"   Vote Yes!");
+
+                if(inputState.lmbTime == 1)
+                {
+                    if(myProfile.canVoteYes && !network::client)
+                    {
+                        job.yesVotes++;
+                        myProfile.canVoteYes = false;
+                    }
+                }
+
             }
 
             if(shapes.shapeHovered(noButt))
             {
                 shapes.createText(gvars::mousePos,15,sf::Color::Red,"   Vote No!");
+
+                if(inputState.lmbTime == 1)
+                {
+                    if(myProfile.canVoteNo && !network::client)
+                    {
+                        job.noVotes++;
+                        myProfile.canVoteNo = false;
+                    }
+                }
+
             }
+
 
         }
 

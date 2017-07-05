@@ -18,6 +18,8 @@ ClientPackage::ClientPackage()
     credits = 100;
     pix = 0;
     activity = "N/A";
+    canVoteYes = true;
+    canVoteNo = true;
 
 
     socket = nullptr;

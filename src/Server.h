@@ -23,6 +23,8 @@ public:
     sf::Uint32 pix;
     sf::Uint32 lastPing;
     sf::Clock pingTimer;
+    bool canVoteYes;
+    bool canVoteNo;
 
     std::vector<std::string> enteredStrings;
     unsigned int enteredStringAimer;
