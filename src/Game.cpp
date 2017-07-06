@@ -3865,7 +3865,7 @@ void jobsMenu()
         spawnControlManager.spawnControllers.clear();
     }
 
-
+    if(worldManager.currentWorld.chunks.empty())
     { // Drawing the jobs
 
         sf::Vector2f HUDPos(-141, 254);
@@ -4955,7 +4955,19 @@ void drawPlayerAttackCooldowns()
 
 
     sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
-    sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos);
+    sf::Vector2f worldPos = sf::Vector2f(pixelPos.x-130,pixelPos.y+150);//window.mapPixelToCoords(pixelPos);
+
+    static int xMod = 0;
+            static int yMod = 0;
+            std::cout << "X/Y Mod: " << xMod << "/" << yMod << std::endl;
+            if(inputState.key[Key::Up].time == 1 || inputState.key[Key::Up].time >= 15)
+                yMod--;
+            if(inputState.key[Key::Down].time == 1 || inputState.key[Key::Down].time >= 15)
+                yMod++;
+            if(inputState.key[Key::Left].time == 1 || inputState.key[Key::Left].time >= 15)
+                xMod--;
+            if(inputState.key[Key::Right].time == 1 || inputState.key[Key::Right].time >= 15)
+                xMod++;
 
 
     if(rangeWeapon.weaponID != Weapon::Nothing)
@@ -5134,12 +5146,14 @@ void renderGame()
 
     textOverlayManager.handleTexts();
 
-    drawPlayerAttackCooldowns();
+
 
     if(inputState.key[Key::Tab])
         drawWallInfo();
 
     drawPathFinder();
+
+    drawPlayerAttackCooldowns();
 
     drawEnemyInfo();
 
