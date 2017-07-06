@@ -855,6 +855,7 @@ public:
 
     std::string name;
     unsigned int id;
+    int clientID;
     sf::Vector2f pos;
     sf::Vector2f lastValidPos;
 
@@ -1117,6 +1118,7 @@ public:
     {
         allyAI = false;
         id = worldManager.globalIDs++;
+        clientID = -1;
         staminaRegen = 1;
 
         alive = true;
@@ -1209,6 +1211,7 @@ class PlayerManager
 {
 public:
     std::list<std::shared_ptr<Player>> players;
+    std::list<Player> clientsPlayers;
 
     sf::Vector2f getPlayersAveragePos()
     {
@@ -1257,7 +1260,7 @@ public:
             }
 
             { // Rotation Code
-               player.rotationPoint = gvars::mousePos;
+                player.rotationPoint = gvars::mousePos;
 
                 int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
                 int rotCheck = rotationDiff;
@@ -1378,7 +1381,7 @@ public:
             Weapon &rangeWeapon = player.characterClass.rangeWeapon;
 
 
-            bool clickReload =  (rangeWeapon.reloadSpeedTimer < 0 && inputState.lmbTime == 1 && rangeWeapon.magCurrent <= 0);
+            bool clickReload =  (rangeWeapon.reloadSpeedTimer < 0 && inputState.lmb && rangeWeapon.magCurrent <= 0);
             bool buttonReload = (rangeWeapon.reloadSpeedTimer < 0 && inputState.key[Key::R].time == 1);
 
             if(buttonReload || clickReload)
@@ -1443,7 +1446,11 @@ public:
         Player &player = *playerPtr.get();
 
         player.pos = spawnPos;
-        // player.pos = sf::Vector2f(102400,102400);
+        buildPlayer(player);
+    }
+
+    void buildPlayer(Player &player)
+    {
         player.healthMax = 100;
         player.health = player.healthMax;
         player.staminaMax = 1000;
@@ -1456,9 +1463,8 @@ public:
         player.moveSpeed = 1;
 
         player.genBaseTraits();
-
-
     }
+
 
 };
 PlayerManager playerManager;
@@ -3162,7 +3168,16 @@ void GenWorldStuffs()
     playerManager.makePlayer(sf::Vector2f(spawnPos.x+(32*16)+random(-100,100),spawnPos.y+(32*16)+random(-100,100)));
     playerManager.players.back().get()->makeAI();
 
-    playerManager.makePlayer(sf::Vector2f(spawnPos.x+(32*16),spawnPos.y+(32*16)));
+    for(auto &player : playerManager.clientsPlayers)
+    {
+        playerManager.makePlayer(sf::Vector2f(spawnPos.x+(32*16),spawnPos.y+(32*16)));
+
+        player.pos = sf::Vector2f(spawnPos.x+(32*16),spawnPos.y+(32*16));
+        *playerManager.players.back().get() = player;
+
+    }
+
+
 
     drawLoadingText("Generating Initial Paths");
     spawnControlManager.pathSpawners();
@@ -3471,10 +3486,23 @@ void serverPacketManager::handlePackets()
     packets.clear();
 }
 
+void setupMyPlayer()
+{
+    Player player;
+    playerManager.buildPlayer(player);
+
+    player.clientID = 0;
+
+
+    // TODO: Load player stuffs here.
+
+    playerManager.clientsPlayers.push_back(player);
+}
+
 void gameSetup()
 {
     texturemanager.init();
-
+    setupMyPlayer();
 }
 
 void testFunction()
@@ -4016,10 +4044,35 @@ void runnersMenu()
     sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
     sf::Texture* arrowButton = &texturemanager.getTexture("ArrowButton.png");
 
-    if(playerManager.players.empty())
+
+
+
+    Player *playerPtr = nullptr;
+
+    for(auto &cliPlayer : playerManager.clientsPlayers)
+        if(cliPlayer.clientID == myProfile.id)
+    {
+        playerPtr = &cliPlayer;
+    }
+
+    if(playerPtr == nullptr)
         return;
 
-    Player &player = *playerManager.players.back().get();
+    Player &player = *playerPtr;
+
+
+    if(inputState.key[Key::LShift] && inputState.key[Key::Q].time == 1)
+    {
+        for(auto &playerMainPtr : playerManager.players)
+        {
+            if(playerMainPtr->clientID == player.clientID)
+            {
+                player.pos = playerMainPtr->pos;
+                *playerMainPtr.get() = player;
+            }
+        }
+    }
+
 
     static Trait* selectedTrait = nullptr;
     static bool needsClass = false;
