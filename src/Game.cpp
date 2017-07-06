@@ -1213,6 +1213,26 @@ public:
     std::list<std::shared_ptr<Player>> players;
     std::list<Player> clientsPlayers;
 
+    Player * getMyClientPlayer()
+    {
+        for(auto &cliPlayer : clientsPlayers)
+            if(cliPlayer.clientID == myProfile.id)
+        {
+            return &cliPlayer;
+        }
+        return nullptr;
+    }
+
+    Player * getMyPlayer()
+    {
+        for(auto &player : players)
+            if(player->clientID == myProfile.id)
+        {
+            return &*(player.get());
+        }
+        return nullptr;
+    }
+
     sf::Vector2f getPlayersAveragePos()
     {
         sf::Vector2f returnPos;
@@ -1282,11 +1302,13 @@ public:
 
     void runPlayerCharacterInput()
     {
+        Player *playerPtr = getMyPlayer();
 
-        if(players.empty())
+        if(playerPtr == nullptr)
             return;
 
-        Player& player = *players.back().get();
+        Player& player = *playerPtr;
+
 
         { // Camera Lock
             //gvars::currentx = player.pos.x;
@@ -4047,13 +4069,7 @@ void runnersMenu()
 
 
 
-    Player *playerPtr = nullptr;
-
-    for(auto &cliPlayer : playerManager.clientsPlayers)
-        if(cliPlayer.clientID == myProfile.id)
-    {
-        playerPtr = &cliPlayer;
-    }
+    Player *playerPtr = playerManager.getMyClientPlayer();
 
     if(playerPtr == nullptr)
         return;
@@ -4991,6 +5007,14 @@ void drawPlayers()
         staminaString.append(std::to_string( (int) player.stamina) );
         staminaString.append("/");
         staminaString.append(std::to_string( (int) player.staminaMax));
+
+        staminaString.append("\n");
+        staminaString.append("ID:");
+        staminaString.append(std::to_string(player.id));
+        staminaString.append(", clientID:");
+        staminaString.append(std::to_string(player.clientID));
+        staminaString.append("\n Name: ");
+        staminaString.append(player.name);
 
         if(player.isTired())
             shapes.createText(player.pos.x,player.pos.y+25,10,sf::Color(100,100,100),staminaString);
