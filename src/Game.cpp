@@ -1441,7 +1441,7 @@ public:
     bool construct;
     std::weak_ptr<Player> target;
     int targetNumber;
-    std::vector<ChunkTile*> storedPath;
+    std::vector<sf::Vector2f> storedPath;
     int lastVisionCheck;
     sf::Vector2f lastVisionPos;
     bool followingVision;
@@ -1594,7 +1594,7 @@ void runEnemyBrain(Enemy &enemy)
         }
         else if(!enemy.storedPath.empty())
         {
-            desiredPosition = enemy.storedPath.front()->pos;
+            desiredPosition = enemy.storedPath.front();
             positionSet = true;
         }
 
@@ -2150,7 +2150,7 @@ class SpawnController
 public:
     sf::Vector2f pos;
     bool targetPathed;
-    std::vector<ChunkTile*> storedPath;
+    std::vector<sf::Vector2f> storedPath;
 
     SpawnController()
     {
@@ -2174,7 +2174,7 @@ public:
         static bool oneSecondPassed = false;
         {
             static sf::Clock oneSecondTimer;
-            if(oneSecondTimer.getElapsedTime().asSeconds() > 1)
+            if(oneSecondTimer.getElapsedTime().asMilliseconds() > 300)
             {
                 oneSecondTimer.restart();
                 oneSecondPassed = true;
@@ -2207,7 +2207,11 @@ public:
                         int results = pathCon.makePath(spawn.pos,squadPos);
                         if(results == 0) // 0 == solved.
                         {
-                            spawn.storedPath = pathCon.storedPath;
+                            spawn.storedPath.clear();
+
+                            for(auto &path : pathCon.storedPath)
+                                spawn.storedPath.push_back(path->pos);
+
                             doneUpdating = true;
                             break;
                         }
@@ -2255,7 +2259,8 @@ public:
             if(results == 0) // 0 == solved.
             {
                 spawnCon.targetPathed = true;
-                spawnCon.storedPath = pathCon.storedPath;
+                for(auto &path : pathCon.storedPath)
+                                spawnCon.storedPath.push_back(path->pos);
 
                 allowUpdates = true;
                 spawnsValid++;
@@ -2275,6 +2280,21 @@ public:
 
 };
 SpawnControllerManager spawnControlManager;
+
+void sendEnemyToClients(Enemy &enemy)
+{
+
+    sf::Packet packet;
+    packet << sf::Uint8(ident::enemyCreation);
+    packet << sf::Uint32(enemy.imageID) << enemy.pos.x << enemy.pos.y
+            << sf::Uint32(enemy.id);
+    packet << sf::Uint32(enemy.storedPath.size());
+    for(auto &i : enemy.storedPath)
+        packet << i.x << i.y;
+
+    sendToAllClients(packet);
+
+}
 
 void spawnLogic()
 {
@@ -2406,6 +2426,9 @@ void spawnLogic()
 
                 enemyManager.enemies.back().get()->storedPath = spawnTile.storedPath;
             }
+
+            if(network::server)
+                sendEnemyToClients(*enemyManager.enemies.back().get());
         }
     }
 
@@ -3253,6 +3276,29 @@ void clientPacketManager::handlePackets()
 
         }
 
+        else if(type == sf::Uint8(ident::enemyCreation))
+        {
+            int enemyType;
+            sf::Vector2f enemyPos;
+            packet >> enemyType;
+            packet >> enemyPos.x;
+            packet >> enemyPos.y;
+            enemyManager.makeEnemy(enemyPos,enemyType);
+            Enemy &enemy = *enemyManager.enemies.back().get();
+
+            packet >> enemy.id;
+
+            int enemyPathSize;
+            packet >> enemyPathSize;
+            for(int i = 0; i != enemyPathSize; i++)
+            {
+                sf::Vector2f pathPos;
+                packet >> pathPos.x >> pathPos.y;
+                enemy.storedPath.push_back(pathPos);
+
+            }
+            std::cout << "Enemy " << enemy.name << " made! \n";
+        }
     }
     packets.clear();
 }
@@ -4977,6 +5023,8 @@ void drawPathFinder()
     {
         pathCon.drawStoredPath();
 
+        std::cout << "Spawners: " << spawnControlManager.spawnControllers.size() << std::endl;
+
         for(auto &spawn : spawnControlManager.spawnControllers)
         {
             if(spawn.targetPathed)
@@ -4991,7 +5039,7 @@ void drawPathFinder()
                 for (auto &i : spawn.storedPath)
                 {
                     sf::Vector2f pathPos;
-                    pathPos = i->pos;
+                    pathPos = i;
                     sf::Color pathColor(255, 0, 0, 255);
 
                     if (!firstRun)

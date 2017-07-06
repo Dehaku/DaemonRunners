@@ -75,7 +75,9 @@ namespace ident
         updatingJobList,
         voteYes,
         voteNo,
-        worldCreation
+        worldCreation,
+        enemyCreation,
+        enemySync
 
     };
 }
