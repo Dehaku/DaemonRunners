@@ -2311,12 +2311,16 @@ void spawnLogic()
                     sf::Vector2f spawnPos = chunk.tiles[i][t].pos;
                     spawnPos += sf::Vector2f(16,16);
                     enemyManager.makeEnemy(spawnPos,EnemyManager::turretHeavy);
+                    if(network::server)
+                        sendEnemyToClients(*enemyManager.enemies.back().get());
                 }
                 if(chunk.tiles[i][t].type == ChunkTile::TURRETLIGHT)
                 {
                     sf::Vector2f spawnPos = chunk.tiles[i][t].pos;
                     spawnPos += sf::Vector2f(16,16);
                     enemyManager.makeEnemy(spawnPos,EnemyManager::turretLight);
+                    if(network::server)
+                        sendEnemyToClients(*enemyManager.enemies.back().get());
                 }
 
                 if(chunk.tiles[i][t].type == ChunkTile::TURRETRANDOM)
@@ -2327,6 +2331,9 @@ void spawnLogic()
                         enemyManager.makeEnemy(spawnPos,EnemyManager::turretHeavy);
                     else
                         enemyManager.makeEnemy(spawnPos,EnemyManager::turretLight);
+
+                    if(network::server)
+                        sendEnemyToClients(*enemyManager.enemies.back().get());
                 }
             }
 
