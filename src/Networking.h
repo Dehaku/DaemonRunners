@@ -77,7 +77,8 @@ namespace ident
         voteNo,
         worldCreation,
         enemyCreation,
-        enemySync
+        enemySync,
+        sendCharacterInfo
 
     };
 }

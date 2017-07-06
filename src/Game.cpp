@@ -10,6 +10,29 @@ StateTracker::StateTracker()
 }
 StateTracker stateTracker;
 
+void allChat(std::string text)
+{
+    // For offline and server.
+    if(!network::client)
+        chatBox.addChat(text);
+
+    // For the client, client receives their own message from server.
+    if(network::client)
+    {
+        sf::Packet packet;
+        packet << sf::Uint8(ident::textMessage) << text;
+        serverSocket.send(packet);
+    }
+
+    // For the server to send to all clients.
+    if(network::server)
+    {
+        sf::Packet packet;
+        packet << sf::Uint8(ident::textMessage) << text;
+        sendToAllClients(packet);
+    }
+
+}
 
 void drawLoadingText(std::string text)
 {
@@ -63,6 +86,45 @@ public:
     std::list<RunnerJob> jobs;
 
 
+    // Internet portion
+    bool everyoneReady;
+    bool confirmationsSentOut;
+    int confirmationsSent;
+    int confirmationsReceived;
+
+    bool Ready()
+    {
+        if(!network::server && !network::client)
+            return true;
+
+        if(network::server)
+        {
+            if(!confirmationsSentOut)
+            {
+                confirmationsSentOut = true;
+                confirmationsReceived = 0;
+                confirmationsSent = clients.size();
+
+                sf::Packet packet;
+                packet << sf::Uint8(ident::sendCharacterInfo);
+                sendToAllClients(packet);
+                std::cout << "Sent " << confirmationsSent << " confirmations. \n";
+
+            }
+        }
+
+        if(confirmationsReceived == confirmationsSent)
+        {
+            confirmationsSentOut = false;
+            confirmationsReceived = 0;
+            return true;
+        }
+
+
+        return false;
+    }
+
+
     void generateJobs()
     {
         // If only the world utilized this function, I probably wouldn't be here right now.
@@ -80,6 +142,10 @@ public:
     {
         jobSelected = nullptr;
         jobIDs = 0;
+
+        everyoneReady = false;
+        confirmationsSentOut = 0;
+        confirmationsReceived = 0;
     }
 };
 JobManager jobManager;
@@ -572,6 +638,17 @@ class TraitManager
 {
 public:
     std::list<Trait> baseTraits;
+    Trait getTrait(int traitID)
+    {
+        for(auto &trait : baseTraits)
+        {
+            if(trait.traitID == traitID)
+                return trait;
+        }
+
+        Trait trait;
+        return trait;
+    }
 
     TraitManager()
     {
@@ -3205,6 +3282,51 @@ void GenWorldStuffs()
     spawnControlManager.pathSpawners();
 }
 
+void insertCharacterToPacket(sf::Packet &packet,Player &player)
+{
+    packet << player.name;
+    packet << sf::Uint32(player.clientID);
+    packet << sf::Uint32(player.characterClass.id);
+    packet << sf::Uint32(player.traits.size());
+    for(auto &trait : player.traits)
+    {
+        packet << sf::Uint32(trait.traitID);
+    }
+    packet << sf::Uint32(player.kills);
+    packet << sf::Uint32(player.deaths);
+    packet << sf::Uint32(player.reviveCount);
+    packet << sf::Uint32(player.revivedCount);
+    packet << sf::Uint32(player.missionsComplete);
+    packet << sf::Uint32(player.missionsFailed);
+}
+
+void insertPacketToCharacter(sf::Packet &packet,Player &player)
+{
+    packet >> player.name;
+    packet >> player.clientID;
+    packet >> player.characterClass.id;
+
+    int traitCount;
+    packet >> traitCount;
+
+    player.traits.clear();
+    for(int i = 0; i != traitCount; i++)
+    {
+        int traitID;
+        packet >> traitID;
+        Trait trait = traitManager.getTrait(traitID);
+        player.traits.push_back(trait);
+    }
+
+    packet >> player.kills;
+    packet >> player.deaths;
+    packet >> player.reviveCount;
+    packet >> player.revivedCount;
+    packet >> player.missionsComplete;
+    packet >> player.missionsFailed;
+}
+
+
 void clientPacketManager::handlePackets()
 {
     for(auto &currentPacket : packets)
@@ -3262,7 +3384,10 @@ void clientPacketManager::handlePackets()
         else if(type == sf::Uint8(ident::clientID) )
         {
             std::cout << "Received our ID: ";
+            Player *player = playerManager.getMyClientPlayer();
             packet >> myProfile.id;
+            player->clientID = myProfile.id;
+
             std::cout << int(myProfile.id) << std::endl;
 
 
@@ -3382,6 +3507,20 @@ void clientPacketManager::handlePackets()
             }
             std::cout << "Enemy " << enemy.name << " made! \n";
         }
+
+        else if(type == sf::Uint8(ident::sendCharacterInfo))
+        {
+            sf::Packet sendPacket;
+            sendPacket << sf::Uint8(ident::sendCharacterInfo);
+
+            Player* playerPtr = playerManager.getMyClientPlayer();
+            if(playerPtr == nullptr)
+                continue;
+            insertCharacterToPacket(sendPacket,*playerPtr);
+
+            serverSocket.send(sendPacket);
+        }
+
     }
     packets.clear();
 }
@@ -3922,6 +4061,7 @@ void sendWorldToClients()
 
 
 
+
 void jobsMenu()
 {
     sf::Texture* hudButton = &texturemanager.getTexture("HUDTab.png");
@@ -3931,20 +4071,40 @@ void jobsMenu()
     if(!network::client && jobManager.jobs.empty())
         jobManager.generateJobs();
 
-
+    static sf::Clock readyTimer;
+    static bool timerRunning = false;
 
 
     if(needsWorld && jobManager.jobSelected != nullptr)
     {
-        needsWorld = false;
-        RunnerJob & job = *jobManager.jobSelected;
-        drawLoadingText("Generating World");
-        worldManager.generateWorld(job.worldSize,100);
+        if(timerRunning == false)
+        {
+            allChat("Server: Attempting to start game...");
+            timerRunning = true;
+            readyTimer.restart();
+        }
 
-        drawLoadingText("Sending world to Clients");
-        sendWorldToClients();
+        if(jobManager.Ready())
+        {
+            allChat("Server: Starting Game!");
+            needsWorld = false;
+            RunnerJob & job = *jobManager.jobSelected;
+            drawLoadingText("Generating World");
+            worldManager.generateWorld(job.worldSize,100);
 
-        GenWorldStuffs();
+            drawLoadingText("Sending world to Clients");
+            sendWorldToClients();
+
+            GenWorldStuffs();
+        }
+        else if(readyTimer.getElapsedTime().asSeconds() > 10)
+        {
+            allChat("Server: Ready process could not be completed.");
+            timerRunning = false;
+            needsWorld = false;
+            jobManager.jobSelected = nullptr;
+        }
+
     }
 
     if(!network::chatting && inputState.key[Key::X].time == 1)

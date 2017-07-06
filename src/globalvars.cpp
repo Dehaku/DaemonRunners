@@ -103,7 +103,7 @@ void ByteTracker::calcBytes()
 }
 
 void ByteTracker::byteInput(sf::Packet& packet)
-{
+{ // TODO: Create a version for sending too. serverSocket to sendToServer() that calls this, and add it to sendToAllClients() and such.
     // network::bytesCollected += packet.getDataSize();
     bytesPassed += packet.getDataSize();
 }
