@@ -1351,7 +1351,10 @@ public:
             Weapon &rangeWeapon = player.characterClass.rangeWeapon;
 
 
-            if(inputState.key[Key::R].time == 1 && rangeWeapon.reloadSpeedTimer < 0)
+            bool clickReload =  (rangeWeapon.reloadSpeedTimer < 0 && inputState.lmbTime == 1 && rangeWeapon.magCurrent <= 0);
+            bool buttonReload = (rangeWeapon.reloadSpeedTimer < 0 && inputState.key[Key::R].time == 1);
+
+            if(buttonReload || clickReload)
                 rangeWeapon.reloadSpeedTimer = rangeWeapon.reloadSpeed;
 
             if(rangeWeapon.reloadSpeedTimer == 0)
@@ -4956,19 +4959,6 @@ void drawPlayerAttackCooldowns()
 
     sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
     sf::Vector2f worldPos = sf::Vector2f(pixelPos.x-130,pixelPos.y+150);//window.mapPixelToCoords(pixelPos);
-
-    static int xMod = 0;
-            static int yMod = 0;
-            std::cout << "X/Y Mod: " << xMod << "/" << yMod << std::endl;
-            if(inputState.key[Key::Up].time == 1 || inputState.key[Key::Up].time >= 15)
-                yMod--;
-            if(inputState.key[Key::Down].time == 1 || inputState.key[Key::Down].time >= 15)
-                yMod++;
-            if(inputState.key[Key::Left].time == 1 || inputState.key[Key::Left].time >= 15)
-                xMod--;
-            if(inputState.key[Key::Right].time == 1 || inputState.key[Key::Right].time >= 15)
-                xMod++;
-
 
     if(rangeWeapon.weaponID != Weapon::Nothing)
     {
