@@ -851,6 +851,8 @@ class Player
 {
 public:
 
+    bool allyAI;
+
     std::string name;
     unsigned int id;
     sf::Vector2f pos;
@@ -860,7 +862,29 @@ public:
 
     CharacterClass characterClass;
 
+    void makeAI()
+    {
+        allyAI = true;
 
+        int aiType = random(1,3);
+        if(aiType == 1)
+        {
+            name = "Marcus";
+            characterClass = characterClassManager.getCharacterClass(CharacterClass::Enforcer);
+        }
+        if(aiType == 2)
+        {
+            name = "Jakob";
+            characterClass = characterClassManager.getCharacterClass(CharacterClass::Sniper);
+        }
+        if(aiType == 3)
+        {
+            name = "Daniel";
+            characterClass = characterClassManager.getCharacterClass(CharacterClass::Engineer);
+        }
+
+        moveSpeed = 1.5;
+    }
 
     std::list<Trait> traits;
     void genBaseTraits()
@@ -1091,6 +1115,7 @@ public:
 
     Player()
     {
+        allyAI = false;
         id = worldManager.globalIDs++;
         staminaRegen = 1;
 
@@ -1205,49 +1230,51 @@ public:
         if(players.empty())
             return;
 
-        Player& player = *players.back().get();
-
-        Weapon &meleeWeapon = player.characterClass.meleeWeapon;
-        Weapon &rangeWeapon = player.characterClass.rangeWeapon;
-
-        if(player.characterClass.focusable)
-            meleeWeapon.attackSpeedTimer -= 1+(1*(0.01*player.characterClass.focusStacks));
-        else
-            meleeWeapon.attackSpeedTimer -= 1;
-        rangeWeapon.attackSpeedTimer -= 1;
-
-
-        if(player.characterClass.focusable)
+        for(auto &playerPtr : players)
         {
-            player.characterClass.focusDecay--;
-            if(player.characterClass.focusDecay <= 0)
-            {
-                player.characterClass.focusDecay = 60;
-                if(player.characterClass.focusStacks > 0)
-                    player.characterClass.focusStacks--;
-            }
-        }
 
-        { // Rotation Code
-           player.rotationPoint = gvars::mousePos;
+            Player& player = *playerPtr.get();
 
-            int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
-            int rotCheck = rotationDiff;
-            if(rotCheck < 0)
-                rotCheck = -rotCheck;
+            Weapon &meleeWeapon = player.characterClass.meleeWeapon;
+            Weapon &rangeWeapon = player.characterClass.rangeWeapon;
 
-            if(rotCheck < player.rotationSpeed)
-                player.rotation = math::angleBetweenVectors(player.pos,player.rotationPoint);
+            if(player.characterClass.focusable)
+                meleeWeapon.attackSpeedTimer -= 1+(1*(0.01*player.characterClass.focusStacks));
             else
+                meleeWeapon.attackSpeedTimer -= 1;
+            rangeWeapon.attackSpeedTimer -= 1;
+
+
+            if(player.characterClass.focusable)
             {
-                if(rotationDiff > 0)
-                    player.rotation += player.rotationSpeed;
-                if(rotationDiff < 0)
-                    player.rotation -= player.rotationSpeed;
+                player.characterClass.focusDecay--;
+                if(player.characterClass.focusDecay <= 0)
+                {
+                    player.characterClass.focusDecay = 60;
+                    if(player.characterClass.focusStacks > 0)
+                        player.characterClass.focusStacks--;
+                }
+            }
+
+            { // Rotation Code
+               player.rotationPoint = gvars::mousePos;
+
+                int rotationDiff = math::angleDiff(player.rotation, math::angleBetweenVectors(player.pos,player.rotationPoint));
+                int rotCheck = rotationDiff;
+                if(rotCheck < 0)
+                    rotCheck = -rotCheck;
+
+                if(rotCheck < player.rotationSpeed)
+                    player.rotation = math::angleBetweenVectors(player.pos,player.rotationPoint);
+                else
+                {
+                    if(rotationDiff > 0)
+                        player.rotation += player.rotationSpeed;
+                    if(rotationDiff < 0)
+                        player.rotation -= player.rotationSpeed;
+                }
             }
         }
-
-
     }
 
     void runPlayerCharacterInput()
@@ -3126,7 +3153,16 @@ void GenWorldStuffs()
     for(auto &chunk : worldManager.currentWorld.chunks)
         chunk.buildChunkImage();
 
-    playerManager.makePlayer(sf::Vector2f(worldManager.currentWorld.chunks.front().pos.x+(32*16),worldManager.currentWorld.chunks.front().pos.y+(32*16)));
+    sf::Vector2i spawnPos = worldManager.currentWorld.chunks.front().pos;
+
+    playerManager.makePlayer(sf::Vector2f(spawnPos.x+(32*16)+random(-100,100),spawnPos.y+(32*16)+random(-100,100)));
+    playerManager.players.back().get()->makeAI();
+    playerManager.makePlayer(sf::Vector2f(spawnPos.x+(32*16)+random(-100,100),spawnPos.y+(32*16)+random(-100,100)));
+    playerManager.players.back().get()->makeAI();
+    playerManager.makePlayer(sf::Vector2f(spawnPos.x+(32*16)+random(-100,100),spawnPos.y+(32*16)+random(-100,100)));
+    playerManager.players.back().get()->makeAI();
+
+    playerManager.makePlayer(sf::Vector2f(spawnPos.x+(32*16),spawnPos.y+(32*16)));
 
     drawLoadingText("Generating Initial Paths");
     spawnControlManager.pathSpawners();
