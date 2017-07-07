@@ -618,6 +618,7 @@ public:
     std::string description;
     int traitID;
     int stackable;
+    bool display;
 
     enum traitIDs
     {
@@ -652,12 +653,24 @@ public:
 
     TraitManager()
     {
+
+
         Trait trait;
+        trait.name = "Locked";
+        trait.description = "Locked Slot";
+        trait.traitID = Trait::Locked;
+        trait.stackable = 99;
+        trait.display = false;
+        baseTraits.push_back(trait);
+
         trait.name = "Empty";
         trait.description = "Empty Slot";
         trait.traitID = Trait::Empty;
         trait.stackable = 99;
+        trait.display = true;
         baseTraits.push_back(trait);
+
+
 
         trait.name = "Sprinter";
         trait.description = "(4) 25% Faster move speed, and 50% faster stamina regen";
@@ -3415,7 +3428,6 @@ void clientPacketManager::handlePackets()
 
         else if(type == sf::Uint8(ident::pingRequest) )
         {
-            std::cout << "Ping \n";
             sf::Packet sendPacket;
             sendPacket << sf::Uint8(ident::pingRequest);
             serverSocket.send(sendPacket);
@@ -3599,8 +3611,6 @@ void serverPacketManager::handlePackets()
         else if(type == sf::Uint8(ident::pingRequest))
         {
             currentPacket.sender->lastPing = currentPacket.sender->pingTimer.getElapsedTime().asMilliseconds();
-
-            std::cout << "ping: " << currentPacket.sender->lastPing<< std::endl;
         }
 
         else if(type == sf::Uint8(ident::clientChangedName))
@@ -3642,6 +3652,13 @@ void serverPacketManager::handlePackets()
             }
         }
 
+        else if(type == sf::Uint8(ident::sendCharacterInfo))
+        {
+            Player player;
+            insertPacketToCharacter(packet,player);
+            playerManager.clientsPlayers.push_back(player);
+            jobManager.confirmationsReceived++;
+        }
 
     }
     packets.clear();
@@ -4256,7 +4273,7 @@ void runnersMenu()
 
     if(selectedTrait != nullptr)
     {
-        std::cout << "Selected Trait: " <<  selectedTrait->name << std::endl;
+        // std::cout << "Selected Trait: " <<  selectedTrait->name << std::endl;
     }
 
 
@@ -4355,6 +4372,9 @@ void runnersMenu()
 
         for(auto &trait : traitManager.baseTraits)
         {
+            if(!trait.display)
+                continue;
+
             shapes.createText(HUDPos.x+xOffset,HUDPos.y+30+(20*traitOffset),15,sf::Color::White,"Trait: " + trait.name, &gvars::hudView);
 
 
@@ -5393,8 +5413,26 @@ void drawConnectedProfileHUD()
 
 }
 
+void printPlayers()
+{
+    for(auto &playerPtr : playerManager.players)
+    {
+        Player &player = *playerPtr;
+
+        std::cout << player.name << ": " << player.characterClass.id << std::endl;
+        if(player.allyAI)
+            std::cout << "*Player is AI!* \n";
+        std::cout << "ID/ClientID: " << player.id << "/" << player.clientID << std::endl;
+        for(auto &trait : player.traits)
+            std::cout << "T: " << trait.traitID << std::endl;
+
+    }
+}
+
 void renderGame()
 {
+    if(!network::chatting && inputState.key[Key::I].time == 1)
+        printPlayers();
 
     drawWorld();
 
