@@ -2446,6 +2446,9 @@ void sendEnemyToClients(Enemy &enemy)
 
 void spawnLogic()
 {
+    if(network::client)
+        return;
+
     if(enemyManager.enemies.empty())
     {
         for(auto &chunk : worldManager.currentWorld.chunks)
@@ -3520,6 +3523,75 @@ void clientPacketManager::handlePackets()
             std::cout << "Enemy " << enemy.name << " made! \n";
         }
 
+        else if(type == sf::Uint8(ident::enemySync))
+        {
+            int enemyAmount;
+            packet >> enemyAmount;
+            for(int i = 0; i != enemyAmount; i++)
+            {
+                int enemyID;
+                bool enemyFound = false;
+                packet >> enemyID;
+
+
+                for(auto &enemyPtr : enemyManager.enemies)
+                {
+                    Enemy &enemy = *enemyPtr;
+
+                    if(enemyID == enemy.id)
+                    {
+                        enemyFound = true;
+
+                        packet >> enemy.pos.x;
+                        packet >> enemy.pos.y;
+                        int targetID;
+                        packet >> targetID;
+                        if(targetID != -1)
+                        {
+                            for(auto &player : playerManager.players)
+                            {
+                                if(player.get()->id == targetID)
+                                    enemy.target = player;
+                            }
+                        }
+
+
+
+                        break;
+                    }
+                }
+                if(!enemyFound)
+                {
+                    std::cout << "Enemy wasn't found, breaking update. \n";
+                    break;
+                }
+
+            }
+
+
+
+
+
+            packet << sf::Uint32(enemyManager.enemies.size());
+            for(auto &enemyPtr : enemyManager.enemies)
+            {
+                Enemy &enemy = *enemyPtr;
+
+                packet << sf::Uint32(enemy.id);
+                packet << enemy.pos.x;
+                packet << enemy.pos.y;
+                if(enemy.target.lock())
+                    packet << sf::Uint32(enemy.target.lock().get()->id);
+                else
+                    packet << sf::Uint32(-1);
+
+            }
+
+
+
+
+        }
+
         else if(type == sf::Uint8(ident::sendCharacterInfo))
         {
             sf::Packet sendPacket;
@@ -4076,7 +4148,32 @@ void sendWorldToClients()
     sendToAllClients(packet);
 }
 
+void updateEnemiesToClients()
+{
+    sf::Packet packet;
+    packet << sf::Uint8(ident::enemySync);
 
+    packet << sf::Uint32(enemyManager.enemies.size());
+    for(auto &enemyPtr : enemyManager.enemies)
+    {
+        Enemy &enemy = *enemyPtr;
+
+        packet << sf::Uint32(enemy.id);
+        packet << enemy.pos.x;
+        packet << enemy.pos.y;
+        if(enemy.target.lock())
+            packet << sf::Uint32(enemy.target.lock().get()->id);
+        else
+            packet << sf::Uint32(-1);
+
+    }
+
+
+
+
+
+    sendToAllClients(packet);
+}
 
 
 void jobsMenu()
@@ -5587,6 +5684,8 @@ void runOneSecond()
         collectPings();
         collectClientInformation();
         updateClientsJobLists();
+
+        updateEnemiesToClients();
 
         updateClientProfiles();
     }

@@ -78,6 +78,7 @@ namespace ident
         worldCreation,
         enemyCreation,
         enemySync,
+        entitySync,
         sendCharacterInfo
 
     };
