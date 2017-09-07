@@ -3827,6 +3827,25 @@ void serverPacketManager::handlePackets()
             jobManager.confirmationsReceived++;
         }
 
+        else if(type == sf::Uint8(ident::ClientSendingPlayerUpdate))
+        {
+            int playerID;
+            packet >> playerID;
+
+            for(auto &playerPtr : playerManager.players)
+            {
+                Player &player = *playerPtr;
+                if(playerID == player.id)
+                {
+                    packet >> player.pos.x >> player.pos.y >> player.rotation;
+                    packet >> player.health;
+
+                    break;
+                }
+            }
+
+
+        }
     }
     packets.clear();
 }
@@ -5824,6 +5843,20 @@ void updateClientsJobLists()
     sendToAllClients(packet);
 }
 
+void updateMyPlayerToServer()
+{
+    if(playerManager.getMyPlayer() == nullptr)
+        return;
+
+    sf::Packet packet;
+    packet << sf::Uint8(ident::ClientSendingPlayerUpdate);
+    Player &player = *playerManager.getMyPlayer();
+    packet << sf::Uint32(player.id);
+    packet << player.pos.x << player.pos.y << player.rotation;
+    packet << player.health;
+    serverSocket.send(packet);
+}
+
 void everyFrame()
 {
     if(inputState.key[Key::F])
@@ -5837,9 +5870,15 @@ void everyFrame()
     }
 
 
+
     if(network::server)
     {
         updatePlayersToClients();
+    }
+
+    if(network::client)
+    {
+        updateMyPlayerToServer();
     }
 }
 

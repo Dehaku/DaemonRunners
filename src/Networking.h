@@ -81,7 +81,8 @@ namespace ident
         entitySync,
         sendCharacterInfo,
         playerSync,
-        playerWipeAndDownload
+        playerWipeAndDownload,
+        ClientSendingPlayerUpdate
 
     };
 }
