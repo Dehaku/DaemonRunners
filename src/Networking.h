@@ -79,7 +79,9 @@ namespace ident
         enemyCreation,
         enemySync,
         entitySync,
-        sendCharacterInfo
+        sendCharacterInfo,
+        playerSync,
+        playerWipeAndDownload
 
     };
 }

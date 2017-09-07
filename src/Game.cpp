@@ -3343,6 +3343,10 @@ void insertPacketToCharacter(sf::Packet &packet,Player &player)
 }
 
 
+
+
+
+
 void clientPacketManager::handlePackets()
 {
     for(auto &currentPacket : packets)
@@ -3605,6 +3609,97 @@ void clientPacketManager::handlePackets()
             serverSocket.send(sendPacket);
         }
 
+        else if(type == sf::Uint8(ident::playerSync))
+        {
+            int playerAmount;
+            packet >> playerAmount;
+            for(int i = 0; i != playerAmount; i++)
+            {
+                int playerID;
+                bool playerFound = false;
+                packet >> playerID;
+
+
+                for(auto &playerPtr : playerManager.players)
+                {
+                    Player &player = *playerPtr;
+
+                    if(playerID == player.id)
+                    {
+                        playerFound = true;
+                        if(player.id == playerManager.getMyPlayer()->id)
+                        { // Prevents the player from being pinned in place.
+                            int packetDrain;
+                            packet >> packetDrain;
+                            packet >> packetDrain;
+                        }
+                        else
+                        {
+                            packet >> player.pos.x;
+                            packet >> player.pos.y;
+                        }
+
+
+                        break;
+                    }
+                }
+                if(!playerFound)
+                {
+                    std::cout << "Player wasn't found, breaking update. \n";
+                    break;
+                }
+
+            }
+
+
+
+
+
+            packet << sf::Uint32(enemyManager.enemies.size());
+            for(auto &enemyPtr : enemyManager.enemies)
+            {
+                Enemy &enemy = *enemyPtr;
+
+                packet << sf::Uint32(enemy.id);
+                packet << enemy.pos.x;
+                packet << enemy.pos.y;
+                if(enemy.target.lock())
+                    packet << sf::Uint32(enemy.target.lock().get()->id);
+                else
+                    packet << sf::Uint32(-1);
+
+            }
+
+
+
+
+        }
+
+        else if(type == sf::Uint8(ident::playerWipeAndDownload))
+        {
+            playerManager.players.clear();
+
+
+
+            int playerAmount;
+            packet >> playerAmount;
+            for(int i = 0; i != playerAmount; i++)
+            {
+                int playerID, clientID;
+                packet >> playerID;
+                packet >> clientID;
+                sf::Vector2f plyPos;
+                packet >> plyPos.x;
+                packet >> plyPos.y;
+                playerManager.makePlayer(plyPos);
+                Player& player = *playerManager.players.back();
+
+                player.clientID = clientID;
+                player.id = playerID;
+                packet >> player.characterClass.id;
+            }
+        }
+
     }
     packets.clear();
 }
@@ -3735,6 +3830,11 @@ void serverPacketManager::handlePackets()
     }
     packets.clear();
 }
+
+
+
+
+
 
 void setupMyPlayer()
 {
@@ -4175,6 +4275,62 @@ void updateEnemiesToClients()
     sendToAllClients(packet);
 }
 
+void updatePlayersToClients()
+{
+    sf::Packet packet;
+    packet << sf::Uint8(ident::playerSync);
+
+    packet << sf::Uint32(playerManager.players.size());
+    for(auto &playerPtr : playerManager.players)
+    {
+        Player &player = *playerPtr;
+
+        packet << sf::Uint32(player.id);
+        packet << player.pos.x;
+        packet << player.pos.y;
+
+    }
+
+
+
+
+
+    sendToAllClients(packet);
+}
+
+void initialPlayerSync()
+{
+    if(!network::server)
+        return;
+    sf::Packet packet;
+
+    packet << sf::Uint8(ident::playerWipeAndDownload);
+
+    packet << sf::Uint32(playerManager.players.size());
+    for(auto &playerPtr : playerManager.players)
+    {
+        Player &player = *playerPtr;
+
+        packet << sf::Uint32(player.id) << sf::Uint32(player.clientID) << player.pos.x << player.pos.y << sf::Uint32(player.characterClass.id);
+    }
+
+    sendToAllClients(packet);
+}
+
+void startJob(bool &needsWorld, RunnerJob & job)
+{
+    allChat("Server: Starting Game!");
+    needsWorld = false;
+    drawLoadingText("Generating World");
+    worldManager.generateWorld(job.worldSize,100);
+
+    drawLoadingText("Sending world to Clients");
+    sendWorldToClients();
+
+    GenWorldStuffs();
+
+    initialPlayerSync();
+}
 
 void jobsMenu()
 {
@@ -4200,16 +4356,7 @@ void jobsMenu()
 
         if(jobManager.Ready())
         {
-            allChat("Server: Starting Game!");
-            needsWorld = false;
-            RunnerJob & job = *jobManager.jobSelected;
-            drawLoadingText("Generating World");
-            worldManager.generateWorld(job.worldSize,100);
-
-            drawLoadingText("Sending world to Clients");
-            sendWorldToClients();
-
-            GenWorldStuffs();
+            startJob(needsWorld, *jobManager.jobSelected);
         }
         else if(readyTimer.getElapsedTime().asSeconds() > 10)
         {
@@ -5677,6 +5824,25 @@ void updateClientsJobLists()
     sendToAllClients(packet);
 }
 
+void everyFrame()
+{
+    if(inputState.key[Key::F])
+    {
+        for(auto &playerPtr : playerManager.players)
+        {
+            Player &player = *playerPtr;
+
+            player.pos.x--;
+        }
+    }
+
+
+    if(network::server)
+    {
+        updatePlayersToClients();
+    }
+}
+
 void runOneSecond()
 {
     if(network::server)
@@ -5788,6 +5954,8 @@ void runServerStuffs()
         oneMinutePassed = true;
     }
 
+
+    everyFrame();
 
     if(oneSecondPassed)
     {
