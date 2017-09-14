@@ -82,7 +82,8 @@ namespace ident
         sendCharacterInfo,
         playerSync,
         playerWipeAndDownload,
-        ClientSendingPlayerUpdate
+        ClientSendingPlayerUpdate,
+        newAttackSync
 
     };
 }

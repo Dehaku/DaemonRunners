@@ -1297,6 +1297,35 @@ public:
 };
 AttackManager attackManager;
 
+void createAttack(Attack &attack)
+{
+    // Make sure the attack's player is valid, This is mostly for networking.
+    if(!attack.owner.lock())
+        return;
+
+    // Store the attack.
+    attackManager.attacks.push_back(attack);
+
+    // Check if networking
+    if(!network::server && !network::client)
+        return;
+    // Create the packet we're sending.
+    sf::Packet packet;
+    packet << sf::Uint8(ident::newAttackSync);
+
+
+    packet << sf::Uint32(attack.owner.lock()->id)
+        << sf::Uint32(attack.attackType)
+        << sf::Uint32(attack.lifeTime);
+
+    // Send packet through network.
+    if(network::server)
+        sendToAllClients(packet);
+    if(network::client)
+        serverSocket.send(packet);
+
+}
+
 class PlayerManager
 {
 public:
@@ -1523,7 +1552,8 @@ public:
                     attack.owner = players.back();
                     attack.attackType = attack.range;
                     attack.lifeTime = 15;
-                    attackManager.attacks.push_back(attack);
+
+                    createAttack(attack);
                 }
 
 
@@ -1540,7 +1570,7 @@ public:
                 attack.owner = players.back();
                 attack.attackType = attack.melee;
                 attack.lifeTime = 3;
-                attackManager.attacks.push_back(attack);
+                createAttack(attack);
 
             }
 
@@ -3700,6 +3730,29 @@ void clientPacketManager::handlePackets()
             }
         }
 
+        else if(type == sf::Uint8(ident::newAttackSync))
+        {
+            int playerID;
+            packet >> playerID;
+            // Our own player, just skip it. We already sent it out.
+            if(playerID == playerManager.getMyPlayer()->id)
+                continue;
+
+            for(auto &playerPtr : playerManager.players)
+            {
+                Player &player = *playerPtr;
+                if(playerID == player.id)
+                {
+                    Attack attack;
+                    attack.owner = playerPtr;
+                    packet >> attack.attackType >> attack.lifeTime;
+                    attackManager.attacks.push_back(attack);
+
+                    break;
+                }
+            }
+        }
+
     }
     packets.clear();
 }
@@ -3845,6 +3898,27 @@ void serverPacketManager::handlePackets()
             }
 
 
+        }
+
+        else if(type == sf::Uint8(ident::newAttackSync))
+        {
+            int playerID;
+            packet >> playerID;
+
+            for(auto &playerPtr : playerManager.players)
+            {
+                Player &player = *playerPtr;
+                if(playerID == player.id)
+                {
+                    Attack attack;
+                    attack.owner = playerPtr;
+                    packet >> attack.attackType >> attack.lifeTime;
+
+                    createAttack(attack);
+
+                    break;
+                }
+            }
         }
     }
     packets.clear();
