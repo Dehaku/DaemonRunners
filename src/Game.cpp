@@ -1352,6 +1352,16 @@ public:
         return nullptr;
     }
 
+    std::shared_ptr<Player> * getMyPlayerPtr()
+    {
+        for(auto &player : players)
+            if(player->clientID == myProfile.id)
+        {
+            return &player;
+        }
+        return nullptr;
+    }
+
     sf::Vector2f getPlayersAveragePos()
     {
         sf::Vector2f returnPos;
@@ -1398,6 +1408,7 @@ public:
                 }
             }
 
+            if(player.id == getMyPlayer()->id)
             { // Rotation Code
                 player.rotationPoint = gvars::mousePos;
 
@@ -1549,7 +1560,7 @@ public:
                     rangeWeapon.attackSpeedTimer = rangeWeapon.attackSpeed;
 
                     Attack attack;
-                    attack.owner = players.back();
+                    attack.owner = *getMyPlayerPtr();
                     attack.attackType = attack.range;
                     attack.lifeTime = 15;
 
@@ -1567,7 +1578,7 @@ public:
                 meleeWeapon.attackSpeedTimer = meleeWeapon.attackSpeed;
 
                 Attack attack;
-                attack.owner = players.back();
+                attack.owner = *getMyPlayerPtr();
                 attack.attackType = attack.melee;
                 attack.lifeTime = 3;
                 createAttack(attack);
@@ -3351,6 +3362,7 @@ void insertPacketToCharacter(sf::Packet &packet,Player &player)
     packet >> player.name;
     packet >> player.clientID;
     packet >> player.characterClass.id;
+    player.characterClass = characterClassManager.getCharacterClass(player.characterClass.id);
 
     int traitCount;
     packet >> traitCount;
@@ -3727,6 +3739,9 @@ void clientPacketManager::handlePackets()
                 player.clientID = clientID;
                 player.id = playerID;
                 packet >> player.characterClass.id;
+
+                player.characterClass = characterClassManager.getCharacterClass(player.characterClass.id);
+
             }
         }
 
@@ -5532,6 +5547,23 @@ void drawPlayers()
         staminaString.append(std::to_string(player.clientID));
         staminaString.append("\n Name: ");
         staminaString.append(player.name);
+
+        if(inputState.key[Key::LAlt])
+        {
+            staminaString.append("\n Class: ");
+            staminaString.append(player.characterClass.name);
+            staminaString.append("\n Class Weapon: ");
+            staminaString.append(player.characterClass.rangeWeapon.name);
+            staminaString.append("\n ");
+            staminaString.append(player.characterClass.meleeWeapon.name);
+
+            for(auto &trait : player.traits)
+            {
+                staminaString.append("\n Trait: ");
+                staminaString.append(trait.name);
+            }
+
+        }
 
         if(player.isTired())
             shapes.createText(player.pos.x,player.pos.y+25,10,sf::Color(100,100,100),staminaString);
